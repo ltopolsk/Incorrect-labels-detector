@@ -193,6 +193,7 @@ def nms(boxes, scores, threshold):
 
         left = np.where(iou < threshold)
         order = order[left]
+    return keep 
 
 
 def average_bboxes(bboxes_sets):

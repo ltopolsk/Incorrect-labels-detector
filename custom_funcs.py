@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import compare as cmp
+import compare_module.compare as cmp
 VOC_BBOX_LABEL_NAMES = (
     'fly',
     'bike',

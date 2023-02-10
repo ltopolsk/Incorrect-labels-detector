@@ -1,7 +1,7 @@
 import os
 import json
 import torch as t
-import compare as cmp
+import compare_module.compare as cmp
 from custom_funcs import cust_vis_bbox
 from model import FasterRCNNVGG16
 from trainer import FasterRCNNTrainer
