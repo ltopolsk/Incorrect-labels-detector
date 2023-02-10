@@ -159,6 +159,42 @@ def pair_targets(targets):
     return bboxes_ret, labels_ret
 
 
+def nms(boxes, scores, threshold):
+    if len(boxes) == 0:
+        return
+
+    xmin = boxes[:, 0]
+    ymin = boxes[:, 1]
+    xmax = boxes[:, 2]
+    ymax = boxes[:, 3]
+
+    areas = (xmax - xmin) * (ymax - ymin)
+    order = np.argsort(scores)
+
+    keep = []
+
+    while len(order) > 0:
+        idx = order[-1]
+        keep.append(boxes[idx])
+        order = order[:-1]
+
+        if len(order) == 9:
+            break
+
+        xxmin = np.maximum(xmin[idx], xmin[order])
+        yymin = np.maximum(ymin[idx], ymin[order])
+        xxmax = np.minimum(xmax[idx], xmax[order])
+        yymax = np.minimum(ymax[idx], ymax[order])
+
+        w = np.maximum(0.0, xxmax - xxmin + 1)
+        h = np.maximum(0.0, yymax - yymin + 1)
+        intersection = w*h
+        iou = intersection/(areas[idx]+areas[order]-intersection)
+
+        left = np.where(iou < threshold)
+        order = order[left]
+
+
 def average_bboxes(bboxes_sets):
     avg_bboxes = []
     for bboxes_set in bboxes_sets:
