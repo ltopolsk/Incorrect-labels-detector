@@ -131,3 +131,5 @@ dmypy.json
 VOCdevkit
 outputs
 models/
+
+demo.ipynb
