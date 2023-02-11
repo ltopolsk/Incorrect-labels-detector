@@ -161,7 +161,7 @@ def pair_targets(targets):
 
 def nms(boxes, scores, threshold):
     if len(boxes) == 0:
-        return
+        return []
 
     xmin = boxes[:, 0]
     ymin = boxes[:, 1]
@@ -178,7 +178,7 @@ def nms(boxes, scores, threshold):
         keep.append(boxes[idx])
         order = order[:-1]
 
-        if len(order) == 9:
+        if len(order) == 0:
             break
 
         xxmin = np.maximum(xmin[idx], xmin[order])
@@ -193,7 +193,61 @@ def nms(boxes, scores, threshold):
 
         left = np.where(iou < threshold)
         order = order[left]
-    return keep 
+    return keep
+
+
+def mean_s(boxes, scores, labels, threshold):
+    if len(boxes) == 0:
+        return []
+
+    xmin = boxes[:, 0]
+    ymin = boxes[:, 1]
+    xmax = boxes[:, 2]
+    ymax = boxes[:, 3]
+
+    areas = (xmax - xmin) * (ymax - ymin)
+    order = np.argsort(scores)
+
+    keep = []
+
+    while len(order) > 0:
+        idx = order[-1]
+        # keep.append(boxes[idx])
+
+        order = order[:-1]
+        if len(order) == 0:
+            break
+
+        xxmin = np.maximum(xmin[idx], xmin[order])
+        yymin = np.maximum(ymin[idx], ymin[order])
+        xxmax = np.minimum(xmax[idx], xmax[order])
+        yymax = np.minimum(ymax[idx], ymax[order])
+        w = np.maximum(0.0, xxmax - xxmin + 1)
+        h = np.maximum(0.0, yymax - yymin + 1)
+        intersection = w*h
+        iou = intersection/(areas[idx]+areas[order]-intersection)
+
+        to_mean = order[np.where(iou >= threshold)]
+        weights = np.array([scores[idx]])
+        xmin_m = np.array([xmin[idx]])
+        ymin_m = np.array([ymin[idx]])
+        xmax_m = np.array([xmax[idx]])
+        ymax_m = np.array([ymax[idx]])
+        for _idx in to_mean:
+            if labels[_idx] == labels[idx]:
+                weights = np.append(weights, scores[_idx])
+                xmin_m = np.append(xmin_m, xmin[_idx])
+                ymin_m = np.append(ymin_m, ymin[_idx])
+                xmax_m = np.append(xmax_m, xmax[_idx])
+                ymax_m = np.append(ymax_m, ymax[_idx])
+        mean_xmin = round(np.average(xmin_m, weights=weights), 2)
+        mean_ymin = round(np.average(ymin_m, weights=weights), 2)
+        mean_xmax = round(np.average(xmax_m, weights=weights), 2)
+        mean_ymax = round(np.average(ymax_m, weights=weights), 2)
+        keep.append(np.array([mean_xmin, mean_ymin, mean_xmax, mean_ymax]))
+        left = np.where(iou < threshold)
+        order = order[left]
+    return keep
 
 
 def average_bboxes(bboxes_sets):
@@ -212,3 +266,14 @@ def average_classes(classes_sets):
     for classes_set in classes_sets:
         avg_classes.append(np.bincount(classes_set).argmax())
     return np.array(avg_classes, dtype=np.int64)
+
+
+if __name__ == "__main__":
+    boxes = np.array([[10.0, 15.0, 25.0, 60.0],
+                      [11.0, 13.0, 25.0, 55.0],
+                      [10.0, 20.0, 40.0, 65.0],
+                      [20.0, 5.0, 27.0, 60.0], ])
+    scores = np.array([0.9, 0.7, 0.5, 0.1])
+    labels = np.array([1, 1, 1, 1])
+    mean_res = mean_s(boxes, scores, labels, 0.3)
+    # nms_res = nms(boxes, scores, 0.5)
