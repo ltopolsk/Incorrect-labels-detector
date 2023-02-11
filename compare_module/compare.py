@@ -194,7 +194,14 @@ def nms(boxes, labels, scores, threshold, func=None):
 
         if func is not None:
             to_mean = order[np.where(iou >= threshold)]
-            box_keep = func(to_mean, boxes, labels, scores, idx)
+            box_keep = func(to_mean,
+                            xmin,
+                            ymin,
+                            xmax,
+                            ymax,
+                            labels,
+                            scores,
+                            idx)
             keep_boxes.append(box_keep)
         else:
             keep_boxes.append(boxes[idx])
@@ -204,12 +211,7 @@ def nms(boxes, labels, scores, threshold, func=None):
     return keep_boxes, keep_labels
 
 
-def mean_bbox(mean_idx, boxes, labels, scores, idx):
-
-    xmin = boxes[:, 0]
-    ymin = boxes[:, 1]
-    xmax = boxes[:, 2]
-    ymax = boxes[:, 3]
+def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
 
     weights = np.array([scores[idx]])
     xmin_m = np.array([xmin[idx]])
