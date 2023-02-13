@@ -9,6 +9,7 @@ from utils.vis_tool import vis_image
 from utils.config import opt
 from utils import array_tool as at
 from data.dataset import VOCBboxDataset
+import numpy as np
 
 MODELS_DIR = './models/'
 DATA_DIR = './VOCdevkit/VOC2007/'
@@ -47,16 +48,22 @@ def save_cmp_results(cmp_res, id):
             f.write('\n')
 
 
-def compare_labels_single(img, bboxes, labels, trainers):
-    targets = []
+def compare_labels_single(img, test_bboxes, test_labels, trainers):
+    boxes, labels, scores = [], [], []
     for trainer in trainers:
-        _bboxes, _labels, _ = trainer.faster_rcnn.predict(img,
-                                                          visualize=True)
-        targets.append({'boxes': _bboxes[0], 'labels': _labels[0]})
-    paired_bboxes, paired_labels = cmp.pair_targets(targets)
-    avg_bboxes = cmp.average_bboxes(paired_bboxes)
-    avg_labels = cmp.average_classes(paired_labels)
-    return cmp.compare(avg_bboxes, avg_labels, bboxes, labels)
+        _bboxes, _labels, _scores = trainer.faster_rcnn.predict(img, visualize=True)
+        boxes.extend(_bboxes[0])
+        labels.extend(_labels[0])
+        scores.extend(_scores[0])
+    boxes = np.array(boxes)
+    labels = np.array(labels)
+    scores = np.array(scores)
+    avg_bboxes, avg_labels = cmp.nms(boxes,
+                                     labels,
+                                     scores,
+                                     threshold=0.5,
+                                     func=cmp.mean_bbox)
+    return cmp.compare(avg_bboxes, avg_labels, test_bboxes, test_labels)
 
 
 def compare_labels_ds(dataset, trainers):

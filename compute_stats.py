@@ -119,4 +119,3 @@ if __name__ == "__main__":
         for j in range(2):
             ax.text(j, i, f'{cm_labels[(i, j)]} = {cm[i, j]}', color='w')
     plt.show()
-

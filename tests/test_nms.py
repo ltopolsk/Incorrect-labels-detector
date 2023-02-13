@@ -10,7 +10,6 @@ def test_nms():
     scores = np.array([0.9, 0.7, 0.5, 0.1])
     labels = np.array([1, 1, 1, 1])
     nms_res, _ = nms(boxes, labels, scores, 0.3)
-    # print(nms_res)
     test_boxes = [np.array([10.0, 15.0, 25.0, 60.0])]
     assert len(nms_res) == len(test_boxes)
     for nms_box, test_box in zip(nms_res, test_boxes):

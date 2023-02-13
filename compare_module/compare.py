@@ -14,13 +14,13 @@ TRUE_POS = 0
 def compute_IoU(a, b):
     area = (b[:, 2] - b[:, 0]) * (b[:, 3] - b[:, 1])
 
-    iw = np.minimum(np.expand_dims(a[:, 2], axis=1), b[:, 2]) - np.maximum(np.expand_dims(a[:, 0], 1), b[:, 0])
-    ih = np.minimum(np.expand_dims(a[:, 3], axis=1), b[:, 3]) - np.maximum(np.expand_dims(a[:, 1], 1), b[:, 1])
+    iw = np.minimum(a[:, 2], b[:, 2]) - np.maximum(a[:, 0], b[:, 0])
+    ih = np.minimum(a[:, 3], b[:, 3]) - np.maximum(a[:, 1], b[:, 1])
 
     iw = np.maximum(iw, 0)
     ih = np.maximum(ih, 0)
 
-    ua = np.expand_dims((a[:, 2] - a[:, 0]) * (a[:, 3] - a[:, 1]), axis=1) + area - iw * ih
+    ua = (a[:, 2] - a[:, 0]) * (a[:, 3] - a[:, 1]) + area - iw * ih
 
     ua = np.maximum(ua, np.finfo(float).eps)
 
@@ -53,9 +53,9 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'err': ERR_LACK_BBOX,
             })
             continue
-        overlaps = compute_IoU(item, bboxes_test)
-        assigned_anno_idx = np.argmax(overlaps, axis=1)
-        max_overlap = overlaps[0, assigned_anno_idx]
+        overlaps = compute_IoU(np.expand_dims(item, axis=0), bboxes_test)
+        assigned_anno_idx = np.argmax(overlaps)
+        max_overlap = overlaps[assigned_anno_idx]
         assigned_label = labels_test[assigned_anno_idx]
         assigned_anno = bboxes_test[assigned_anno_idx]
         if assigned_anno_idx in detected_anno:
@@ -99,7 +99,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
         rest_idx = set([i for i in range(len(bboxes_test))])
         detected_idx_set = set()
         for idx in detected_anno:
-            detected_idx_set.add(idx[0])
+            detected_idx_set.add(idx)
         rest_idx = rest_idx - detected_idx_set
         rest_bboxes = [bboxes_test[idx] for idx in rest_idx]
         rest_labels = [labels_test[idx] for idx in rest_idx]
@@ -115,53 +115,9 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
     return t
 
 
-def pair_targets(targets):
-    bboxes = [target['boxes'] for target in targets]
-    labels = [target['labels'] for target in targets]
-    bboxes_sets = []
-    used_bboxes = []
-
-    def check_pair_in_sets(pair):
-        if pair[1] in used_bboxes:
-            return
-        for bboxes_set in bboxes_sets:
-            if pair[1] in bboxes_set:
-                return
-            if pair[0] in bboxes_set:
-                bboxes_set.append(pair[1])
-                return
-        bboxes_sets.append(pair)
-        used_bboxes.append(pair[1])
-        return
-
-    for i in range(len(bboxes)-1):
-        for j in range(i+1, len(bboxes)):
-            overlaps = compute_IoU(bboxes[i], bboxes[j])
-            for k in range(overlaps.shape[0]):
-                assigned_anno_idx = np.argmax(overlaps, axis=1)
-                max_overlap = np.max(overlaps[k, assigned_anno_idx])
-                if max_overlap < IOU_TRESHOLD:
-                    continue
-                new_pair = [{'box': k,
-                            'targets_no': i},
-                            {'box': assigned_anno_idx[k],
-                            'targets_no': j}]
-                check_pair_in_sets(new_pair)
-
-    bboxes_ret = []
-    labels_ret = []
-    for i, bboxes_set in enumerate(bboxes_sets):
-        bboxes_ret.append([])
-        labels_ret.append([])
-        for bbox in bboxes_set:
-            bboxes_ret[i].append(bboxes[bbox['targets_no']][bbox['box']])
-            labels_ret[i].append(labels[bbox['targets_no']][bbox['box']])
-    return bboxes_ret, labels_ret
-
-
 def nms(boxes, labels, scores, threshold, func=None):
     if len(boxes) == 0:
-        return []
+        return np.array([]), np.array([])
 
     xmin = boxes[:, 0]
     ymin = boxes[:, 1]
@@ -206,9 +162,8 @@ def nms(boxes, labels, scores, threshold, func=None):
         else:
             keep_boxes.append(boxes[idx])
         keep_labels.append(labels[idx])
-        left = np.where(iou < threshold)
-        order = order[left]
-    return keep_boxes, keep_labels
+        order = order[np.where(iou < threshold)]
+    return np.array(keep_boxes), np.array(keep_labels)
 
 
 def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
@@ -235,24 +190,6 @@ def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
     return np.array([mean_xmin, mean_ymin, mean_xmax, mean_ymax])
 
 
-def average_bboxes(bboxes_sets):
-    avg_bboxes = []
-    for bboxes_set in bboxes_sets:
-        avg_bbox = np.zeros((1, 4), dtype=np.float32)
-        for bbox in bboxes_set:
-            avg_bbox += bbox
-        avg_bboxes.append(avg_bbox / len(bboxes_set))
-    bboxes = np.stack(avg_bboxes).astype(np.float32) if len(avg_bboxes) > 0 else np.array(avg_bboxes) 
-    return bboxes
-
-
-def average_classes(classes_sets):
-    avg_classes = []
-    for classes_set in classes_sets:
-        avg_classes.append(np.bincount(classes_set).argmax())
-    return np.array(avg_classes, dtype=np.int64)
-
-
 if __name__ == "__main__":
     boxes = np.array([[10.0, 15.0, 25.0, 60.0],
                       [11.0, 13.0, 25.0, 55.0],
@@ -260,5 +197,5 @@ if __name__ == "__main__":
                       [20.0, 5.0, 27.0, 60.0], ])
     scores = np.array([0.9, 0.7, 0.5, 0.1])
     labels = np.array([1, 1, 1, 1])
-    mean_res = mean_s(boxes, scores, labels, 0.3)
+    # mean_res = mean_s(boxes, scores, labels, 0.3)
     # nms_res = nms(boxes, scores, 0.5)
