@@ -137,7 +137,6 @@ def nms(boxes, labels, scores, threshold, func=None):
 
         order = order[:-1]
 
-
         xxmin = np.maximum(xmin[idx], xmin[order])
         yymin = np.maximum(ymin[idx], ymin[order])
         xxmax = np.minimum(xmax[idx], xmax[order])
