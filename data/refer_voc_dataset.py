@@ -43,10 +43,10 @@ class ReferVOCDataset():
 
         bbox = np.stack(bbox).astype(np.float32)
         label = np.stack(label).astype(np.int32)
-        difficult = np.array(difficult, dtype=np.bool).astype(np.uint8)
-        renamed = np.array(renamed, dtype=np.bool).astype(np.uint8)
-        resized = np.array(resized, dtype=np.bool).astype(np.uint8)
-        removed = np.array(removed, dtype=np.bool).astype(np.uint8)
+        difficult = np.array(difficult, dtype=np.bool_).astype(np.uint8)
+        renamed = np.array(renamed, dtype=np.bool_).astype(np.uint8)
+        resized = np.array(resized, dtype=np.bool_).astype(np.uint8)
+        removed = np.array(removed, dtype=np.bool_).astype(np.uint8)
         return {'boxes': bbox,
                 'labels': label,
                 'difficult': difficult,
