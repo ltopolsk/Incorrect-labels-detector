@@ -132,11 +132,11 @@ def nms(boxes, labels, scores, threshold, func=None):
 
     while len(order) > 0:
         idx = order[-1]
+        if len(order) == 0:
+            break
 
         order = order[:-1]
 
-        if len(order) == 0:
-            break
 
         xxmin = np.maximum(xmin[idx], xmin[order])
         yymin = np.maximum(ymin[idx], ymin[order])
@@ -188,3 +188,13 @@ def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
     mean_ymax = round(np.average(ymax_m, weights=weights), 2)
 
     return np.array([mean_xmin, mean_ymin, mean_xmax, mean_ymax])
+
+
+if __name__ == "__main__":
+    boxes = np.array([[10.0, 15.0, 25.0, 60.0],
+                      [11.0, 13.0, 25.0, 55.0],
+                      [10.0, 20.0, 40.0, 65.0],
+                      [90.0, 80.0, 180.0, 150.0], ])
+    scores = np.array([0.9, 0.55, 0.5, 0.6])
+    labels = np.array([1, 1, 1, 1])
+    nms_res, _ = nms(boxes, labels, scores, 0.3)
