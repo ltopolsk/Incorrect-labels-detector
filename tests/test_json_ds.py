@@ -46,3 +46,13 @@ def test_json_err_lack_bbox():
                                                        [0.0, 0.0, 0.0, 0.0]]))
     assert np.array_equal(res['labels_test'], np.array([8, -1, -1]))
     assert np.array_equal(res['errs'], np.array([-2, -4, -4]))
+
+
+def test_json_err_bbox_unnes():
+
+    res = ds[5]
+    assert np.array_equal(res['boxes_mean'], np.array([[0, 0, 0, 0]], dtype=np.float32))
+    assert np.array_equal(res['labels_mean'], np.array([-1]))
+    assert np.array_equal(res['boxes_test'], np.array([[29.0, 30.0, 278.0, 357.0]]))
+    assert np.array_equal(res['labels_test'], np.array([11]))
+    assert np.array_equal(res['errs'], np.array([-5]))
