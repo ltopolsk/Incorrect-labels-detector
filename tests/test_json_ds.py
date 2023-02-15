@@ -32,3 +32,17 @@ def test_json_err_bbox_size():
     assert np.array_equal(res['boxes_test'], np.array([[76.0, 40.0, 254.0, 429.0]]))
     assert np.array_equal(res['labels_test'], np.array([18]))
     assert np.array_equal(res['errs'], np.array([-2]))
+
+
+def test_json_err_lack_bbox():
+
+    res = ds[1]
+    assert np.array_equal(res['boxes_mean'], np.array([[234.15, 73.57, 372.43, 336.21],
+                                                       [50.36, 194.28, 239.23, 349.53],
+                                                       [22.23, 80.67, 211.59, 406.84]], dtype=np.float32))
+    assert np.array_equal(res['labels_mean'], np.array([8, 8, 17]))
+    assert np.array_equal(res['boxes_test'], np.array([[15.0, 191.0, 248.0, 363.0],
+                                                       [0.0, 0.0, 0.0, 0.0],
+                                                       [0.0, 0.0, 0.0, 0.0]]))
+    assert np.array_equal(res['labels_test'], np.array([8, -1, -1]))
+    assert np.array_equal(res['errs'], np.array([-2, -4, -4]))
