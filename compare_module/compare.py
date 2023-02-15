@@ -188,14 +188,3 @@ def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
     mean_ymax = round(np.average(ymax_m, weights=weights), 2)
 
     return np.array([mean_xmin, mean_ymin, mean_xmax, mean_ymax])
-
-
-if __name__ == "__main__":
-    boxes = np.array([[10.0, 15.0, 25.0, 60.0],
-                      [11.0, 13.0, 25.0, 55.0],
-                      [10.0, 20.0, 40.0, 65.0],
-                      [20.0, 5.0, 27.0, 60.0], ])
-    scores = np.array([0.9, 0.7, 0.5, 0.1])
-    labels = np.array([1, 1, 1, 1])
-    # mean_res = mean_s(boxes, scores, labels, 0.3)
-    # nms_res = nms(boxes, scores, 0.5)
