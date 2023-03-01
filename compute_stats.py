@@ -14,12 +14,6 @@ stats = {
     'fn': 0,
 }
 
-
-def get_targets(ds, i):
-    _, _bboxes, _labels, _ = ds[i]
-    return {'boxes': _bboxes, 'labels': _labels}
-
-
 def compute_img_detections(targets_ref, targets_json):
     global stats
     used_targs_ref = []
