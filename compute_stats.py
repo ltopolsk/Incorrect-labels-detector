@@ -7,15 +7,9 @@ import matplotlib.pyplot as plt
 OUTPUT_DIR = './outputs/res/'
 VOC_DIR = './VOCdevkit/VOC2007/'
 
-stats = {
-    'tp': 0,
-    'tn': 0,
-    'fp': 0,
-    'fn': 0,
-}
 
-def compute_img_detections(targets_ref, targets_json):
-    global stats
+def compute_img_detections(targets_ref, targets_json, stats):
+    # global stats
     used_targs_ref = []
     for i in range(len(targets_json['errs'])):
         if targets_json['errs'][i] == 0:
@@ -88,8 +82,9 @@ def compute_img_detections(targets_ref, targets_json):
 if __name__ == "__main__":
     json_ds = JsonDataSet(OUTPUT_DIR)
     refer_ds = ReferVOCDataset(VOC_DIR, split='test')
+    stats = {'tp': 0,'tn': 0,'fp': 0,'fn': 0,}
     for i in range(len(json_ds)):
-        compute_img_detections(refer_ds[i], json_ds[i])
+        compute_img_detections(refer_ds[i], json_ds[i], stats)
     print(f'acc: {(stats["tp"] + stats["tn"])/(stats["tp"]+stats["tn"]+stats["fp"]+stats["fn"]):.4f}')
     print(f'prec: {stats["tp"]/(stats["tp"]+stats["fp"]):.4f}')
     print(f'prec_negative: {stats["tn"]/(stats["tn"]+stats["fn"]):.4f}')
