@@ -3,12 +3,6 @@ import numpy as np
 
 ds = JsonDataSet('./outputs_dir')
 
-exp_vals_0 = {'boxes_mean': np.array([[53.06, 9.41, 277.63, 292.82]]),
-              'labels_mean': np.array([11]),
-              'boxes_test': np.array([[62.0, 55.0, 289.0, 283.0]]),
-              'labels_test': np.array([11]),
-              'errs': np.array([0])}
-
 
 exp_vals_0 = {'boxes_mean': np.array([[53.06, 9.41, 277.63, 292.82]],
                                      dtype=np.float32),
