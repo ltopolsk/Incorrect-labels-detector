@@ -22,13 +22,15 @@ exp_vals_1 = {'boxes_mean': np.array([[0.0, 77.73, 500.0, 317.64],
               'labels_test': np.array([19, 8]),
               'errs': np.array([-1, -1])}
 
-exp_vals_2 = {'boxes_mean': np.array([[56.57, 180.12, 283.38, 465.90]],
+exp_vals_2 = {'boxes_mean': np.array([[56.57, 180.12, 283.38, 465.90],
+                                      [52.57, 175.12, 280.38, 460.90]],
                                      dtype=np.float32),
-              'labels_mean': np.array([18]),
-              'boxes_test': np.array([[76.0, 40.0, 254.0, 429.0]],
+              'labels_mean': np.array([18, 18]),
+              'boxes_test': np.array([[76.0, 40.0, 254.0, 429.0],
+                                      [76.0, 40.0, 254.0, 429.0]],
                                      dtype=np.float32),
-              'labels_test': np.array([18]),
-              'errs': np.array([-2])}
+              'labels_test': np.array([18, 18]),
+              'errs': np.array([-2, -2])}
 
 exp_vals_3 = {'boxes_mean': np.array([[234.15, 73.57, 372.43, 336.21],
                                       [50.36, 194.28, 239.23, 349.53],
