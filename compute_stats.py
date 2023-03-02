@@ -17,20 +17,20 @@ def compute_img_detections(targets_ref, targets_json, stats):
             stats[stat_empty] += 1
             return 1
 
-    def compare_test_refer(pos, stats_incr, stat_empty):
+    def compare_test_refer(stats_incr, stat_empty):
         if check_empty(stat_empty): return
-        _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][pos]).all(axis=1))[0]
+        _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
         if len(_idx) != 0:
             idx = _idx[0]
             used_targs_ref.append(idx)
-            stats[stats_incr[0]] += int(targets_ref['labels'][idx] == targets_json['labels_test'][pos])
-            stats[stats_incr[1]] += int(targets_ref['labels'][idx] != targets_json['labels_test'][pos])
+            stats[stats_incr[0]] += int(targets_ref['labels'][idx] == targets_json['labels_test'][i])
+            stats[stats_incr[1]] += int(targets_ref['labels'][idx] != targets_json['labels_test'][i])
         else:
             stats[stat_empty] += 1
 
-    def compare_mean_refer(pos, stats_incr, stat_empty, ref_keyword):
+    def compare_mean_refer(stats_incr, stat_empty, ref_keyword):
         if check_empty(stat_empty): return
-        overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][pos], axis=0), targets_ref['boxes'])
+        overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][i], axis=0), targets_ref['boxes'])
         assigned_anno_idx = np.argmax(overlaps)
         if assigned_anno_idx in used_targs_ref:
             stats[stats_incr[1]] += 1
@@ -42,25 +42,25 @@ def compute_img_detections(targets_ref, targets_json, stats):
             else:
                 stats[stats_incr[1]] += 1
 
-    def compare_test_not_ref(pos, stats_incr, stat_empty):
+    def compare_test_not_ref(stats_incr, stat_empty):
         if check_empty(stat_empty): return
-        _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][pos]).all(axis=1))[0]
+        _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
         if len(_idx) == 0:
             stats[stats_incr[0]] += 1
         else:
             stats[stats_incr[1]] += 1
             used_targs_ref.append(_idx[0])
 
-    def get_command_dict(pos):
-        return {0: (compare_test_refer, (pos, ('tp', 'fp'), 'fp')),
-                -1: (compare_test_refer, (i, ('fn', 'tn'), 'fn')),
-                -2: (compare_mean_refer, (i, ('tn', 'fn'), 'fn', 'resized')),
-                -4: (compare_mean_refer, (i, ('tn', 'fn'), 'tn', 'removed')),
-                -5: (compare_test_not_ref, (i, ('tn', 'fn'), 'tn')),
+    def get_command_dict():
+        return {0: (compare_test_refer, (('tp', 'fp'), 'fp')),
+                -1: (compare_test_refer, (('fn', 'tn'), 'fn')),
+                -2: (compare_mean_refer, (('tn', 'fn'), 'fn', 'resized')),
+                -4: (compare_mean_refer, (('tn', 'fn'), 'tn', 'removed')),
+                -5: (compare_test_not_ref, (('tn', 'fn'), 'tn')),
                 }
 
     for i in range(len(targets_json['errs'])):
-        command_dict = get_command_dict(i)
+        command_dict = get_command_dict()
         func, args = command_dict[targets_json['errs'][i]]
         func(*args)
 
