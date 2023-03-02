@@ -9,80 +9,64 @@ VOC_DIR = './VOCdevkit/VOC2007/'
 
 
 def compute_img_detections(targets_ref, targets_json, stats):
-    # global stats
+
+    def compare_test_refer(pos, stats_incr, stat_empty):
+        if not len(targets_ref['boxes']):
+            stats[stat_empty] += 1
+            return
+
+        _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][pos]).all(axis=1))[0]
+        if len(_idx) != 0:
+            idx = _idx[0]
+            used_targs_ref.append(idx)
+            stats[stats_incr[0]] += int(targets_ref['labels'][idx] == targets_json['labels_test'][pos])
+            stats[stats_incr[1]] += int(targets_ref['labels'][idx] != targets_json['labels_test'][pos])
+        else:
+            stats[stat_empty] += 1
+
+    def compare_mean_refer(pos, stats_incr, stat_empty, ref_keyword):
+        if not len(targets_ref['boxes']):
+            stats[stat_empty] += 1
+            return
+        overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][pos], axis=0), targets_ref['boxes'])
+        assigned_anno_idx = np.argmax(overlaps)
+        if assigned_anno_idx in used_targs_ref:
+            stats[stats_incr[1]] += 1
+        else:
+            max_overlap = overlaps[assigned_anno_idx]
+            if max_overlap >= IOU_TRESHOLD and targets_ref[ref_keyword][assigned_anno_idx]:
+                stats[stats_incr[0]] += 1
+                used_targs_ref.append(assigned_anno_idx)
+            else:
+                stats[stats_incr[1]] += 1
+
+    def compare_test_not_ref(pos, stats_incr, empty_stat):
+        if not len(targets_ref['boxes']):
+            stats[empty_stat] += 1
+            return
+        _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][pos]).all(axis=1))[0]
+        if len(_idx) == 0:
+            stats[stats_incr[0]] += 1
+        else:
+            stats[stats_incr[1]] += 1
+            used_targs_ref.append(_idx[0])
     used_targs_ref = []
     for i in range(len(targets_json['errs'])):
         if targets_json['errs'][i] == 0:
-            if not len(targets_ref['boxes']):
-                stats['fp'] += 1
-                continue
-            _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
-            if len(_idx) != 0:
-                idx = _idx[0]
-                used_targs_ref.append(idx)
-                stats['tp'] += int(targets_ref['labels'][idx] == targets_json['labels_test'][i])
-                stats['fp'] += int(targets_ref['labels'][idx] != targets_json['labels_test'][i])
-            else:
-                stats['fp'] += 1
-        elif targets_json['errs'][i] == -1:
-            if not len(targets_ref['boxes']):
-                stats['fn'] += 1
-                continue
-            _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
-            if len(_idx) != 0:
-                idx = _idx[0]
-                used_targs_ref.append(idx)
-                if targets_ref['labels'][idx] != targets_json['labels_test'][i]:
-                    stats['tn'] += 1
-                else:
-                    stats['fn'] += 1
-            else:
-                stats['fn'] += 1
-        elif targets_json['errs'][i] == -2:
-            if not len(targets_ref['boxes']):
-                stats['fn'] += 1
-                continue
-            overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][i], axis=0), targets_ref['boxes'])
-            assigned_anno_idx = np.argmax(overlaps)
-            if assigned_anno_idx in used_targs_ref:
-                stats['fn'] += 1
-            else:
-                max_overlap = overlaps[assigned_anno_idx]
-                if max_overlap >= IOU_TRESHOLD and targets_ref['resized'][assigned_anno_idx]:
-                    stats['tn'] += 1
-                    used_targs_ref.append(assigned_anno_idx)
-                else:
-                    stats['fn'] += 1
+            compare_test_refer(i, ('tp', 'fp'), 'fp')
 
-        elif targets_json['errs'][i] == -3:
-            pass
+        elif targets_json['errs'][i] == -1:
+            compare_test_refer(i, ('fn', 'tn'), 'fn')
+
+        elif targets_json['errs'][i] == -2:
+            compare_mean_refer(i, ('tn', 'fn'), 'fn', 'resized')
 
         elif targets_json['errs'][i] == -4:
-            if not len(targets_ref['boxes']):
-                stats['tn'] += 1
-                continue
-            overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][i], axis=0), targets_ref['boxes'])
-            assigned_anno_idx = np.argmax(overlaps)
-            if assigned_anno_idx in used_targs_ref:
-                stats['fn'] += 1
-            else:
-                max_overlap = overlaps[assigned_anno_idx]
-                if max_overlap >= IOU_TRESHOLD and targets_ref['removed'][assigned_anno_idx]:
-                    used_targs_ref.append(assigned_anno_idx)
-                    stats['tn'] += 1
-                else:
-                    stats['fn'] += 1
+            compare_mean_refer(i, ('tn', 'fn'), 'tn', 'removed')
 
         elif targets_json['errs'][i] == -5:
-            if not len(targets_ref['boxes']):
-                stats['tn'] += 1
-                continue
-            _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
-            if len(_idx) == 0:
-                stats['tn'] += 1
-            else:
-                stats['fn'] += 1
-                used_targs_ref.append(_idx[0])
+            compare_test_not_ref(i, ('tn', 'fn'), 'tn')
+
     if len(used_targs_ref) < np.array(targets_ref['boxes']).shape[0]:
         rest_idx = set(i for i in range(targets_ref['boxes'].shape[0]))
         used_idx_set = set(used_targs_ref)
