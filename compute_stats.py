@@ -17,10 +17,8 @@ def compute_img_detections(targets_ref, targets_json, stats):
             if len(_idx) != 0:
                 idx = _idx[0]
                 used_targs_ref.append(idx)
-                if targets_ref['labels'][idx] == targets_json['labels_test'][i]:
-                    stats['tp'] += 1
-                else:
-                    stats['fp'] += 1
+                stats['tp'] += int(targets_ref['labels'][idx] == targets_json['labels_test'][i])
+                stats['fp'] += int(targets_ref['labels'][idx] != targets_json['labels_test'][i])
             else:
                 stats['fp'] += 1
         elif targets_json['errs'][i] == -1:
@@ -64,17 +62,18 @@ def compute_img_detections(targets_ref, targets_json, stats):
                     stats['fn'] += 1
 
         elif targets_json['errs'][i] == -5:
+            if not len(targets_ref['boxes']):
+                stats['tn'] += 1
+                continue
             _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
             if len(_idx) == 0:
                 stats['tn'] += 1
             else:
                 stats['fn'] += 1
                 used_targs_ref.append(_idx[0])
-    if targets_json['boxes_mean'].shape[0] < targets_ref['boxes'].shape[0]:
-        rest_idx = set([i for i in range(targets_ref['boxes'].shape[0])])
-        used_idx_set = set()
-        for idx in used_targs_ref:
-            used_idx_set.add(idx)
+    if len(used_targs_ref) < np.array(targets_ref['boxes']).shape[0]:
+        rest_idx = set(i for i in range(targets_ref['boxes'].shape[0]))
+        used_idx_set = set(used_targs_ref)
         rest_idx = rest_idx - used_idx_set
         stats['fp'] += len(rest_idx)
 
@@ -82,7 +81,7 @@ def compute_img_detections(targets_ref, targets_json, stats):
 if __name__ == "__main__":
     json_ds = JsonDataSet(OUTPUT_DIR)
     refer_ds = ReferVOCDataset(VOC_DIR, split='test')
-    stats = {'tp': 0,'tn': 0,'fp': 0,'fn': 0,}
+    stats = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0}
     for i in range(len(json_ds)):
         compute_img_detections(refer_ds[i], json_ds[i], stats)
     print(f'acc: {(stats["tp"] + stats["tn"])/(stats["tp"]+stats["tn"]+stats["fp"]+stats["fn"]):.4f}')
