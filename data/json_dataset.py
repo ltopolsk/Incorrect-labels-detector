@@ -25,19 +25,24 @@ class JsonDataSet():
                 self._append_label(res['label_mean'], labels_mean)
                 self._append_label(res['label_test'], labels_test)
                 errors.append(res['err'])
-        bboxes_mean = np.stack(bboxes_mean).astype(np.float32)
-        bboxes_test = np.stack(bboxes_test).astype(np.float32)
-        labels_mean = np.stack(labels_mean).astype(np.int32)
-        labels_test = np.stack(labels_test).astype(np.int32)
-        errors = np.stack(errors).astype(np.int32)
-        errors_sorted = np.argsort(-errors)
-        targets = {'boxes_mean': bboxes_mean[errors_sorted],
-                   'labels_mean': labels_mean[errors_sorted],
-                   'boxes_test': bboxes_test[errors_sorted],
-                   'labels_test': labels_test[errors_sorted],
-                   'errs': errors[errors_sorted],
-                   }
-        return targets
+        try:
+            bboxes_mean = np.stack(bboxes_mean).astype(np.float32)
+            bboxes_test = np.stack(bboxes_test).astype(np.float32)
+            labels_mean = np.stack(labels_mean).astype(np.int32)
+            labels_test = np.stack(labels_test).astype(np.int32)
+            errors = np.stack(errors).astype(np.int32)
+            errors_sorted = np.argsort(-errors)
+        except ValueError:
+            return {'boxes_mean': [],
+                    'labels_mean': [],
+                    'boxes_test': [],
+                    'labels_test': [],
+                    'errs': []}
+        return {'boxes_mean': bboxes_mean[errors_sorted],
+                'labels_mean': labels_mean[errors_sorted],
+                'boxes_test': bboxes_test[errors_sorted],
+                'labels_test': labels_test[errors_sorted],
+                'errs': errors[errors_sorted]}
 
     def __len__(self):
         return len(fnmatch.filter(os.listdir(self.json_dir),

@@ -40,13 +40,15 @@ class ReferVOCDataset():
             renamed.append(int(obj.find('renamed').text))
             resized.append(int(obj.find('resized').text))
             removed.append(int(obj.find('removed').text))
-
-        bbox = np.stack(bbox).astype(np.float32)
-        label = np.stack(label).astype(np.int32)
-        difficult = np.array(difficult, dtype=np.bool).astype(np.uint8)
-        renamed = np.array(renamed, dtype=np.bool).astype(np.uint8)
-        resized = np.array(resized, dtype=np.bool).astype(np.uint8)
-        removed = np.array(removed, dtype=np.bool).astype(np.uint8)
+        try:
+            bbox = np.stack(bbox).astype(np.float32)
+            label = np.stack(label).astype(np.int32)
+        except ValueError:
+            pass
+        difficult = np.array(difficult, dtype=np.bool_).astype(np.uint8)
+        renamed = np.array(renamed, dtype=np.bool_).astype(np.uint8)
+        resized = np.array(resized, dtype=np.bool_).astype(np.uint8)
+        removed = np.array(removed, dtype=np.bool_).astype(np.uint8)
         return {'boxes': bbox,
                 'labels': label,
                 'difficult': difficult,

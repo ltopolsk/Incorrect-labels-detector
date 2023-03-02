@@ -1,0 +1,2 @@
+{"box_mean": [50.36, 194.28, 239.23, 349.53], "label_mean": 8, "box_test": null, "label_test": null, "err": -4}
+{"box_mean": [22.23, 80.67, 211.59, 406.84], "label_mean": 17, "box_test": null, "label_test": null, "err": -4}
