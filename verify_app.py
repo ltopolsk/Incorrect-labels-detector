@@ -27,14 +27,15 @@ errs = {
 
 
 def read_trainers():
-    trainers = []
-    faster_rcnn = FasterRCNNVGG16()
-    opt.caffe_pretrain = False
-    trainer = FasterRCNNTrainer(faster_rcnn).cuda()
+    models = []
+    # opt.caffe_pretrain = False
+    # trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     for i in range(NUM_SETS):
-        trainer.load(os.path.join(MODELS_DIR, f'model_{i+1}'))
-        trainers.append(trainer)
-    return trainers
+        faster_rcnn = FasterRCNNVGG16()
+        state_dict = t.load(os.path.join(MODELS_DIR, f'model_{i+1}'))
+        faster_rcnn.load_state_dict(state_dict['model'])
+        models.append(faster_rcnn.cuda())
+    return models
 
 
 def read_data(split):
@@ -50,8 +51,8 @@ def save_cmp_results(cmp_res, id):
 
 def compare_labels_single(img, test_bboxes, test_labels, trainers):
     boxes, labels, scores = [], [], []
-    for trainer in trainers:
-        _bboxes, _labels, _scores = trainer.faster_rcnn.predict(img, visualize=True)
+    for model in trainers:
+        _bboxes, _labels, _scores = model.predict(img, visualize=True)
         boxes.extend(_bboxes[0])
         labels.extend(_labels[0])
         scores.extend(_scores[0])
