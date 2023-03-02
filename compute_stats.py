@@ -13,6 +13,9 @@ def compute_img_detections(targets_ref, targets_json, stats):
     used_targs_ref = []
     for i in range(len(targets_json['errs'])):
         if targets_json['errs'][i] == 0:
+            if not len(targets_ref['boxes']):
+                stats['fp'] += 1
+                continue
             _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
             if len(_idx) != 0:
                 idx = _idx[0]
@@ -22,6 +25,9 @@ def compute_img_detections(targets_ref, targets_json, stats):
             else:
                 stats['fp'] += 1
         elif targets_json['errs'][i] == -1:
+            if not len(targets_ref['boxes']):
+                stats['fn'] += 1
+                continue
             _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][i]).all(axis=1))[0]
             if len(_idx) != 0:
                 idx = _idx[0]
@@ -33,13 +39,16 @@ def compute_img_detections(targets_ref, targets_json, stats):
             else:
                 stats['fn'] += 1
         elif targets_json['errs'][i] == -2:
+            if not len(targets_ref['boxes']):
+                stats['fn'] += 1
+                continue
             overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][i], axis=0), targets_ref['boxes'])
             assigned_anno_idx = np.argmax(overlaps)
             if assigned_anno_idx in used_targs_ref:
                 stats['fn'] += 1
             else:
                 max_overlap = overlaps[assigned_anno_idx]
-                if max_overlap >= IOU_TRESHOLD and targets_ref['resized'][assigned_anno_idx] == 1:
+                if max_overlap >= IOU_TRESHOLD and targets_ref['resized'][assigned_anno_idx]:
                     stats['tn'] += 1
                     used_targs_ref.append(assigned_anno_idx)
                 else:
@@ -49,13 +58,16 @@ def compute_img_detections(targets_ref, targets_json, stats):
             pass
 
         elif targets_json['errs'][i] == -4:
+            if not len(targets_ref['boxes']):
+                stats['tn'] += 1
+                continue
             overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][i], axis=0), targets_ref['boxes'])
             assigned_anno_idx = np.argmax(overlaps)
             if assigned_anno_idx in used_targs_ref:
                 stats['fn'] += 1
             else:
                 max_overlap = overlaps[assigned_anno_idx]
-                if max_overlap >= IOU_TRESHOLD and targets_ref['removed'][assigned_anno_idx] == 1:
+                if max_overlap >= IOU_TRESHOLD and targets_ref['removed'][assigned_anno_idx]:
                     used_targs_ref.append(assigned_anno_idx)
                     stats['tn'] += 1
                 else:
