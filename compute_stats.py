@@ -10,11 +10,15 @@ VOC_DIR = './VOCdevkit/VOC2007/'
 
 def compute_img_detections(targets_ref, targets_json, stats):
 
-    def compare_test_refer(pos, stats_incr, stat_empty):
+    used_targs_ref = []
+
+    def check_empty(stat_empty):
         if not len(targets_ref['boxes']):
             stats[stat_empty] += 1
-            return
+            return 1
 
+    def compare_test_refer(pos, stats_incr, stat_empty):
+        if check_empty(stat_empty): return
         _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][pos]).all(axis=1))[0]
         if len(_idx) != 0:
             idx = _idx[0]
@@ -25,9 +29,7 @@ def compute_img_detections(targets_ref, targets_json, stats):
             stats[stat_empty] += 1
 
     def compare_mean_refer(pos, stats_incr, stat_empty, ref_keyword):
-        if not len(targets_ref['boxes']):
-            stats[stat_empty] += 1
-            return
+        if check_empty(stat_empty): return
         overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][pos], axis=0), targets_ref['boxes'])
         assigned_anno_idx = np.argmax(overlaps)
         if assigned_anno_idx in used_targs_ref:
@@ -40,32 +42,27 @@ def compute_img_detections(targets_ref, targets_json, stats):
             else:
                 stats[stats_incr[1]] += 1
 
-    def compare_test_not_ref(pos, stats_incr, empty_stat):
-        if not len(targets_ref['boxes']):
-            stats[empty_stat] += 1
-            return
+    def compare_test_not_ref(pos, stats_incr, stat_empty):
+        if check_empty(stat_empty): return
         _idx = np.where((targets_ref['boxes'] == targets_json['boxes_test'][pos]).all(axis=1))[0]
         if len(_idx) == 0:
             stats[stats_incr[0]] += 1
         else:
             stats[stats_incr[1]] += 1
             used_targs_ref.append(_idx[0])
-    used_targs_ref = []
+
+    def get_command_dict(pos):
+        return {0: (compare_test_refer, (pos, ('tp', 'fp'), 'fp')),
+                -1: (compare_test_refer, (i, ('fn', 'tn'), 'fn')),
+                -2: (compare_mean_refer, (i, ('tn', 'fn'), 'fn', 'resized')),
+                -4: (compare_mean_refer, (i, ('tn', 'fn'), 'tn', 'removed')),
+                -5: (compare_test_not_ref, (i, ('tn', 'fn'), 'tn')),
+                }
+
     for i in range(len(targets_json['errs'])):
-        if targets_json['errs'][i] == 0:
-            compare_test_refer(i, ('tp', 'fp'), 'fp')
-
-        elif targets_json['errs'][i] == -1:
-            compare_test_refer(i, ('fn', 'tn'), 'fn')
-
-        elif targets_json['errs'][i] == -2:
-            compare_mean_refer(i, ('tn', 'fn'), 'fn', 'resized')
-
-        elif targets_json['errs'][i] == -4:
-            compare_mean_refer(i, ('tn', 'fn'), 'tn', 'removed')
-
-        elif targets_json['errs'][i] == -5:
-            compare_test_not_ref(i, ('tn', 'fn'), 'tn')
+        command_dict = get_command_dict(i)
+        func, args = command_dict[targets_json['errs'][i]]
+        func(*args)
 
     if len(used_targs_ref) < np.array(targets_ref['boxes']).shape[0]:
         rest_idx = set(i for i in range(targets_ref['boxes'].shape[0]))
