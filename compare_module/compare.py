@@ -95,12 +95,8 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'err': TRUE_POS,
         })
         detected_anno.append(assigned_anno_idx)
-    if bboxes_mean.shape[0] < bboxes_test.shape[0]:
-        rest_idx = set([i for i in range(len(bboxes_test))])
-        detected_idx_set = set()
-        for idx in detected_anno:
-            detected_idx_set.add(idx)
-        rest_idx = rest_idx - detected_idx_set
+    if len(detected_anno) < bboxes_test.shape[0]:
+        rest_idx = set([i for i in range(len(bboxes_test))]) - set(detected_anno)
         rest_bboxes = [bboxes_test[idx] for idx in rest_idx]
         rest_labels = [labels_test[idx] for idx in rest_idx]
         for bbox, label in zip(rest_bboxes, rest_labels):

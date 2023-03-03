@@ -65,9 +65,7 @@ def compute_img_detections(targets_ref, targets_json, stats):
         func(*args)
 
     if len(used_targs_ref) < np.array(targets_ref['boxes']).shape[0]:
-        rest_idx = set(i for i in range(targets_ref['boxes'].shape[0]))
-        used_idx_set = set(used_targs_ref)
-        rest_idx = rest_idx - used_idx_set
+        rest_idx = set(i for i in range(targets_ref['boxes'].shape[0])) - set(used_targs_ref)
         stats['fp'] += len(rest_idx)
 
 
