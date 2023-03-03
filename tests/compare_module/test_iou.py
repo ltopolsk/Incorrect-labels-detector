@@ -1,5 +1,5 @@
 import numpy as np
-import compare_module.compare as cmp
+from compare_module.iou import compute_IoU
 
 
 def test_compute_IoU():
@@ -18,4 +18,4 @@ def test_compute_IoU():
 
 
 def _test_compute_IoU(box_1, box_2, exp_val):
-    assert round(cmp.compute_IoU(box_1, box_2)[0], 3) == exp_val
+    assert round(compute_IoU(box_1, box_2)[0], 3) == exp_val

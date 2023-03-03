@@ -1,4 +1,5 @@
-from compare_module.compare import IOU_TRESHOLD, compute_IoU
+from compare_module.iou import compute_IoU
+from compare_module.config import IOU_TRESHOLD
 from data.json_dataset import JsonDataSet
 from data.refer_voc_dataset import ReferVOCDataset
 import numpy as np
