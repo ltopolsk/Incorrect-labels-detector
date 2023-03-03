@@ -1,12 +1,12 @@
 import os
 import json
 import torch as t
-import compare_module.compare as cmp
+from compare_module.compare import compare
+import compare_module.config as c
+from compare_module.nms import nms
 from custom_funcs import cust_vis_bbox
 from model import FasterRCNNVGG16
-from trainer import FasterRCNNTrainer
 from utils.vis_tool import vis_image
-from utils.config import opt
 from utils import array_tool as at
 from data.dataset import VOCBboxDataset
 import numpy as np
@@ -17,19 +17,17 @@ OUTPUT_DIR = './outputs/'
 NUM_SETS = 4
 
 errs = {
-    cmp.TRUE_POS: 0,
-    cmp.ERR_BBOX_SIZE: 0,
-    cmp.ERR_BBOX_UNNES: 0,
-    cmp.ERR_LABEL: 0,
-    cmp.ERR_LACK_BBOX: 0,
-    cmp.ERR_REDUN: 0,
+    c.TRUE_POS: 0,
+    c.ERR_BBOX_SIZE: 0,
+    c.ERR_BBOX_UNNES: 0,
+    c.ERR_LABEL: 0,
+    c.ERR_LACK_BBOX: 0,
+    c.ERR_REDUN: 0,
 }
 
 
 def read_trainers():
     models = []
-    # opt.caffe_pretrain = False
-    # trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     for i in range(NUM_SETS):
         faster_rcnn = FasterRCNNVGG16()
         state_dict = t.load(os.path.join(MODELS_DIR, f'model_{i+1}'))
@@ -59,12 +57,11 @@ def compare_labels_single(img, test_bboxes, test_labels, trainers):
     boxes = np.array(boxes)
     labels = np.array(labels)
     scores = np.array(scores)
-    avg_bboxes, avg_labels = cmp.nms(boxes,
-                                     labels,
-                                     scores,
-                                     threshold=0.5,
-                                     func=cmp.mean_bbox)
-    return cmp.compare(avg_bboxes, avg_labels, test_bboxes, test_labels)
+    avg_bboxes, avg_labels = nms(boxes,
+                                 labels,
+                                 scores,
+                                 threshold=0.5)
+    return compare(avg_bboxes, avg_labels, test_bboxes, test_labels)
 
 
 def compare_labels_ds(dataset, trainers):
