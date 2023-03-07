@@ -54,9 +54,9 @@ def compare_labels_single(img, test_bboxes, test_labels, trainers):
         boxes.extend(_bboxes[0])
         labels.extend(_labels[0])
         scores.extend(_scores[0])
-    boxes = np.array(boxes)
-    labels = np.array(labels)
-    scores = np.array(scores)
+    boxes = t.tensor(boxes)
+    labels = t.tensor(labels)
+    scores = t.tensor(scores)
     avg_bboxes, avg_labels = nms(boxes,
                                  labels,
                                  scores,

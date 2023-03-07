@@ -1,6 +1,14 @@
-import numpy as np
 import torch as t
 from compare_module.nms import nms
+
+
+def test_nms_empty():
+    boxes = t.tensor([])
+    scores = t.tensor([])
+    labels = t.tensor([])
+    nms_bboxes, nms_labels = nms(boxes, labels, scores, 0.0)
+    assert t.equal(nms_bboxes, t.empty((0, 4)))
+    assert t.equal(nms_labels, t.empty((0)))
 
 
 def test_nms_single_box():

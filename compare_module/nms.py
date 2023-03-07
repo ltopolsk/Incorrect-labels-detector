@@ -27,7 +27,7 @@ def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
 
 
 def nms(boxes, labels, scores, threshold, func=mean_bbox):
-    if len(boxes) == 0:
+    if boxes.shape[0] == 0:
         return t.empty((0, 4)), t.empty((0))
 
     xmin = boxes[:, 0]

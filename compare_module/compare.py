@@ -1,25 +1,26 @@
 import numpy as np
+import torch as t
 import compare_module.config as c
 from .iou import compute_IoU
 
 
 def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
-    t = []
+    ret = []
     if bboxes_mean.shape[0] == 0 and bboxes_test.shape[0] > 0:
         for bbox, label in zip(bboxes_test, labels_test):
-            t.append({
+            ret.append({
                 'box_mean': None,
                 'label_mean': None,
                 'box_test': bbox.tolist(),
                 'label_test': label.item(),
                 'err': c.ERR_BBOX_UNNES,
             })
-        return t
+        return ret
 
     detected_anno = []
     for i, item in enumerate(bboxes_mean):
         if bboxes_test.shape[0] == 0:
-            t.append({
+            ret.append({
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': None,
@@ -33,7 +34,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
         assigned_label = labels_test[assigned_anno_idx]
         assigned_anno = bboxes_test[assigned_anno_idx]
         if assigned_anno_idx in detected_anno:
-            t.append({
+            ret.append({
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': None,
@@ -42,7 +43,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
             })
             continue
         if max_overlap < c.IOU_TRESHOLD:
-            t.append({
+            ret.append({
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': assigned_anno.tolist(),
@@ -52,7 +53,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
             detected_anno.append(assigned_anno_idx)
             continue
         if labels_mean[i] != assigned_label:
-            t.append({
+            ret.append({
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': assigned_anno.tolist(),
@@ -61,7 +62,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
             })
             detected_anno.append(assigned_anno_idx)
             continue
-        t.append({
+        ret.append({
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': assigned_anno.tolist(),
@@ -74,7 +75,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
         rest_bboxes = [bboxes_test[idx] for idx in rest_idx]
         rest_labels = [labels_test[idx] for idx in rest_idx]
         for bbox, label in zip(rest_bboxes, rest_labels):
-            t.append({
+            ret.append({
                 'box_mean': None,
                 'label_mean': None,
                 'box_test': bbox.tolist(),
@@ -82,5 +83,4 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'err': c.ERR_BBOX_UNNES,
             })
 
-    return t
-
+    return ret
