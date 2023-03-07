@@ -4,26 +4,26 @@ import torch as t
 
 def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
 
-    weights = np.array([scores[idx]])
-    xmin_m = np.array([xmin[idx]])
-    ymin_m = np.array([ymin[idx]])
-    xmax_m = np.array([xmax[idx]])
-    ymax_m = np.array([ymax[idx]])
+    weights = t.tensor([scores[idx]])
+    xmin_m = t.tensor([xmin[idx]])
+    ymin_m = t.tensor([ymin[idx]])
+    xmax_m = t.tensor([xmax[idx]])
+    ymax_m = t.tensor([ymax[idx]])
 
     for _idx in mean_idx:
         if labels[_idx] == labels[idx]:
-            weights = np.append(weights, scores[_idx])
-            xmin_m = np.append(xmin_m, xmin[_idx])
-            ymin_m = np.append(ymin_m, ymin[_idx])
-            xmax_m = np.append(xmax_m, xmax[_idx])
-            ymax_m = np.append(ymax_m, ymax[_idx])
+            weights = t.cat((weights, scores[_idx].unsqueeze(0)))
+            xmin_m = t.cat((xmin_m, xmin[_idx].unsqueeze(0)))
+            ymin_m = t.cat((ymin_m, ymin[_idx].unsqueeze(0)))
+            xmax_m = t.cat((xmax_m, xmax[_idx].unsqueeze(0)))
+            ymax_m = t.cat((ymax_m, ymax[_idx].unsqueeze(0)))
 
-    mean_xmin = round(np.average(xmin_m, weights=weights), 2)
-    mean_ymin = round(np.average(ymin_m, weights=weights), 2)
-    mean_xmax = round(np.average(xmax_m, weights=weights), 2)
-    mean_ymax = round(np.average(ymax_m, weights=weights), 2)
+    mean_xmin = t.unsqueeze(xmin_m@weights/weights.sum(), 0)
+    mean_ymin = t.unsqueeze(ymin_m@weights/weights.sum(), 0)
+    mean_xmax = t.unsqueeze(xmax_m@weights/weights.sum(), 0)
+    mean_ymax = t.unsqueeze(ymax_m@weights/weights.sum(), 0)
 
-    return np.array([mean_xmin, mean_ymin, mean_xmax, mean_ymax])
+    return t.round(t.cat([mean_xmin, mean_ymin, mean_xmax, mean_ymax]), decimals=2).unsqueeze(0)
 
 
 def nms(boxes, labels, scores, threshold, func=mean_bbox):
@@ -68,7 +68,7 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
                             labels,
                             scores,
                             idx)
-            keep_boxes.append(box_keep)
+            keep_boxes = t.cat((keep_boxes, box_keep))
         else:
             keep_boxes = t.cat((keep_boxes, boxes[idx].unsqueeze(0)), dim=0)
         keep_labels = t.cat((keep_labels, labels[idx].unsqueeze(0)))
@@ -83,5 +83,4 @@ if __name__ == '__main__':
                       [20.0, 5.0, 27.0, 60.0], ])
     scores = t.tensor([0.9, 0.7, 0.5, 0.1])
     labels = t.tensor([1, 1, 1, 1])
-    nms_res, _ = nms(boxes, labels, scores, 0.3, func=None)
-    # test_boxes = t.tensor([[10.0, 15.0, 25.0, 60.0]])
+    nms_res, _ = nms(boxes, labels, scores, 0.3)
