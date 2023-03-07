@@ -1,4 +1,5 @@
 import numpy as np
+import torch as t
 
 
 def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
@@ -27,7 +28,7 @@ def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
 
 def nms(boxes, labels, scores, threshold, func=mean_bbox):
     if len(boxes) == 0:
-        return np.array([]), np.array([])
+        return t.empty((0, 4)), t.empty((0))
 
     xmin = boxes[:, 0]
     ymin = boxes[:, 1]
@@ -35,10 +36,10 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
     ymax = boxes[:, 3]
 
     areas = (xmax - xmin) * (ymax - ymin)
-    order = np.argsort(scores)
+    order = t.argsort(scores)
 
-    keep_boxes = []
-    keep_labels = []
+    keep_boxes = t.empty((0, 4))
+    keep_labels = t.empty((0))
 
     while len(order) > 0:
         idx = order[-1]
@@ -47,10 +48,10 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
 
         order = order[:-1]
 
-        xxmin = np.maximum(xmin[idx], xmin[order])
-        yymin = np.maximum(ymin[idx], ymin[order])
-        xxmax = np.minimum(xmax[idx], xmax[order])
-        yymax = np.minimum(ymax[idx], ymax[order])
+        xxmin = t.maximum(xmin[idx], xmin[order])
+        yymin = t.maximum(ymin[idx], ymin[order])
+        xxmax = t.minimum(xmax[idx], xmax[order])
+        yymax = t.minimum(ymax[idx], ymax[order])
 
         w = np.maximum(0.0, xxmax - xxmin + 1)
         h = np.maximum(0.0, yymax - yymin + 1)
@@ -69,7 +70,18 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
                             idx)
             keep_boxes.append(box_keep)
         else:
-            keep_boxes.append(boxes[idx])
-        keep_labels.append(labels[idx])
+            keep_boxes = t.cat((keep_boxes, boxes[idx].unsqueeze(0)), dim=0)
+        keep_labels = t.cat((keep_labels, labels[idx].unsqueeze(0)))
         order = order[np.where(iou < threshold)]
-    return np.array(keep_boxes), np.array(keep_labels)
+    return keep_boxes, keep_labels
+
+
+if __name__ == '__main__':
+    boxes = t.tensor([[10.0, 15.0, 25.0, 60.0],
+                      [11.0, 13.0, 25.0, 55.0],
+                      [10.0, 20.0, 40.0, 65.0],
+                      [20.0, 5.0, 27.0, 60.0], ])
+    scores = t.tensor([0.9, 0.7, 0.5, 0.1])
+    labels = t.tensor([1, 1, 1, 1])
+    nms_res, _ = nms(boxes, labels, scores, 0.3, func=None)
+    # test_boxes = t.tensor([[10.0, 15.0, 25.0, 60.0]])
