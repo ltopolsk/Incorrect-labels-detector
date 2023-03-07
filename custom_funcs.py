@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import compare_module.compare as cmp
+import compare_module.config as c
 VOC_BBOX_LABEL_NAMES = (
     'fly',
     'bike',
@@ -25,12 +25,12 @@ VOC_BBOX_LABEL_NAMES = (
 )
 
 COLORS = {
-    cmp.TRUE_POS: 'green',
-    cmp.ERR_LABEL: 'red',
-    cmp.ERR_BBOX_SIZE: 'orange',
-    cmp.ERR_BBOX_UNNES: 'purple',
-    cmp.ERR_LACK_BBOX: 'yellow',
-    cmp.ERR_REDUN: 'blue',
+    c.TRUE_POS: 'green',
+    c.ERR_LABEL: 'red',
+    c.ERR_BBOX_SIZE: 'orange',
+    c.ERR_BBOX_UNNES: 'purple',
+    c.ERR_LACK_BBOX: 'yellow',
+    c.ERR_REDUN: 'blue',
 }
 
 

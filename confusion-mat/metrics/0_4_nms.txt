@@ -1,0 +1,5 @@
+acc: 0.3723
+prec: 0.7156
+prec_negative: 0.1135
+recall: 0.3783
+recall_negative: 0.3463
