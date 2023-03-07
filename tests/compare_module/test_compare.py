@@ -2,6 +2,7 @@ import numpy as np
 from compare_module.compare import compare
 import compare_module.config as c
 
+
 def test_cmp_unnes():
     boxes = compare(np.array([]),
                     np.array([]),

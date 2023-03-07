@@ -60,7 +60,8 @@ def compare_labels_single(img, test_bboxes, test_labels, trainers):
     avg_bboxes, avg_labels = nms(boxes,
                                  labels,
                                  scores,
-                                 threshold=0.5)
+                                 threshold=c.IOU_TRESHOLD,
+                                 func=c.FUNC)
     return compare(avg_bboxes, avg_labels, test_bboxes, test_labels)
 
 

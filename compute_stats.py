@@ -1,9 +1,10 @@
 from compare_module.iou import compute_IoU
-from compare_module.config import IOU_TRESHOLD
+from compare_module.config import IOU_TRESHOLD, FUNC
 from data.json_dataset import JsonDataSet
 from data.refer_voc_dataset import ReferVOCDataset
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 OUTPUT_DIR = './outputs/res/'
 VOC_DIR = './VOCdevkit/VOC2007/'
@@ -76,11 +77,15 @@ if __name__ == "__main__":
     stats = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0}
     for i in range(len(json_ds)):
         compute_img_detections(refer_ds[i], json_ds[i], stats)
-    print(f'acc: {(stats["tp"] + stats["tn"])/(stats["tp"]+stats["tn"]+stats["fp"]+stats["fn"]):.4f}')
-    print(f'prec: {stats["tp"]/(stats["tp"]+stats["fp"]):.4f}')
-    print(f'prec_negative: {stats["tn"]/(stats["tn"]+stats["fn"]):.4f}')
-    print(f'recall: {stats["tp"]/(stats["tp"]+stats["fn"]):.4f}')
-    print(f'recall_negative: {stats["tn"]/(stats["tn"]+stats["fp"]):.4f}')
+    metrics = {'acc': ((stats["tp"] + stats["tn"])/(stats["tp"]+stats["tn"]+stats["fp"]+stats["fn"])),
+               'prec': (stats["tp"]/(stats["tp"]+stats["fp"])),
+               'prec_negative': (stats["tn"]/(stats["tn"]+stats["fn"])),
+               'recall': (stats["tp"]/(stats["tp"]+stats["fn"])),
+               'recall_negative': (stats["tn"]/(stats["tn"]+stats["fp"])), }
+    file_name = '0_' + str(int(IOU_TRESHOLD*100)) + '_' + FUNC.__name__ if FUNC is not None else 'nms'
+    with open(os.path.join('./confusion-mat', 'metrics', f'{file_name}.txt'), 'w') as f:
+        for k, v in metrics.items():
+            f.write(f'{k}: {v:.3f}\n')
     cm = np.array([[stats['tp'], stats['fp']], [stats['fn'], stats['tn']]])
     fig, ax = plt.subplots()
     im = ax.imshow(cm)
@@ -93,4 +98,4 @@ if __name__ == "__main__":
     for i in range(2):
         for j in range(2):
             ax.text(j, i, f'{cm_labels[(i, j)]} = {cm[i, j]}', color='w')
-    plt.show()
+    plt.savefig(os.path.join('./confusion-mat', 'imgs', f'{file_name}.png'))
