@@ -46,7 +46,6 @@ def train(**kwargs):
     opt._parse(kwargs)
 
     dataset = Dataset(opt)
-    print(len(dataset))
     print('load data')
     dataloader = data_.DataLoader(dataset,
                                   batch_size=1,

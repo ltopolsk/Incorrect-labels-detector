@@ -56,7 +56,7 @@ def cust_vis_bbox(ax, cmp_res, figname):
         return ax
     for res in cmp_res:
         if res['box_test'] is None:
-            ax = draw_bbox(ax, res['box_mean'], res['label_mean'], COLORS[res['err']])
+            ax = draw_bbox(ax, res['box_mean'], int(res['label_mean']), COLORS[res['err']])
         ax = draw_bbox(ax, res['box_test'], res['label_test'], COLORS[res['err']])
     plt.savefig(figname)
     plt.close()

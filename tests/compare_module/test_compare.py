@@ -1,14 +1,14 @@
-import numpy as np
+import torch as t
 from compare_module.compare import compare
 import compare_module.config as c
 
 
 def test_cmp_unnes():
-    boxes = compare(np.array([]),
-                    np.array([]),
-                    np.array([[15., 20., 60., 100],
+    boxes = compare(t.tensor([]),
+                    t.tensor([]),
+                    t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]))
+                    t.tensor([1, 10]))
 
     exp_dicts = [{'box_mean': None,
                   'label_mean': None,
@@ -24,11 +24,11 @@ def test_cmp_unnes():
 
 
 def test_cmp_lack():
-    boxes = compare(np.array([[15., 20., 60., 100],
+    boxes = compare(t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]),
-                    np.array([]),
-                    np.array([]))
+                    t.tensor([1, 10]),
+                    t.tensor([]),
+                    t.tensor([]))
 
     exp_dicts = [{'box_mean': [15., 20., 60., 100],
                   'label_mean': 1,
@@ -44,12 +44,12 @@ def test_cmp_lack():
 
 
 def test_cmp_label():
-    boxes = compare(np.array([[15., 20., 60., 100],
+    boxes = compare(t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]),
-                    np.array([[15., 20., 60., 100],
+                    t.tensor([1, 10]),
+                    t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([10, 9]))
+                    t.tensor([10, 9]))
 
     exp_dicts = [{'box_mean': [15., 20., 60., 100],
                   'label_mean': 1,
@@ -65,12 +65,12 @@ def test_cmp_label():
 
 
 def test_cmp_true():
-    boxes = compare(np.array([[15., 20., 60., 100],
+    boxes = compare(t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]),
-                    np.array([[15., 20., 60., 100],
+                    t.tensor([1, 10]),
+                    t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]))
+                    t.tensor([1, 10]))
 
     exp_dicts = [{'box_mean': [15., 20., 60., 100],
                   'label_mean': 1,
@@ -86,11 +86,11 @@ def test_cmp_true():
 
 
 def test_cmp_more_test_bbox():
-    boxes = compare(np.array([[50., 10., 100., 30]]),
-                    np.array([10]),
-                    np.array([[15., 20., 60., 100],
+    boxes = compare(t.tensor([[50., 10., 100., 30]]),
+                    t.tensor([10]),
+                    t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]))
+                    t.tensor([1, 10]))
 
     exp_dicts = [{'box_mean': [50., 10., 100., 30],
                   'label_mean': 10,
@@ -106,12 +106,12 @@ def test_cmp_more_test_bbox():
 
 
 def test_cmp_size():
-    boxes = compare(np.array([[15., 10., 300., 150],
+    boxes = compare(t.tensor([[15., 10., 300., 150],
                               [50., 10., 55., 15]]),
-                    np.array([1, 10]),
-                    np.array([[15., 20., 60., 100],
+                    t.tensor([1, 10]),
+                    t.tensor([[15., 20., 60., 100],
                               [50., 10., 100., 30]]),
-                    np.array([1, 10]))
+                    t.tensor([1, 10]))
 
     exp_dicts = [{'box_mean': [15., 10., 300., 150],
                   'label_mean': 1,
@@ -127,11 +127,11 @@ def test_cmp_size():
 
 
 def test_cmp_less_test_bbox():
-    boxes = compare(np.array([[15., 20., 60., 100],
+    boxes = compare(t.tensor([[15., 20., 60., 100],
                               [15., 20., 60., 100]]),
-                    np.array([1, 10]),
-                    np.array([[15., 20., 60., 100]]),
-                    np.array([1]))
+                    t.tensor([1, 10]),
+                    t.tensor([[15., 20., 60., 100]]),
+                    t.tensor([1]))
 
     exp_dicts = [{'box_mean': [15., 20., 60., 100],
                   'label_mean': 1,

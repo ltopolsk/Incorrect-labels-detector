@@ -1,14 +1,15 @@
 import numpy as np
 import torch as t
+# from .iou import compute_IoU
 
 
 def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
 
-    weights = t.tensor([scores[idx]])
-    xmin_m = t.tensor([xmin[idx]])
-    ymin_m = t.tensor([ymin[idx]])
-    xmax_m = t.tensor([xmax[idx]])
-    ymax_m = t.tensor([ymax[idx]])
+    weights = t.tensor([scores[idx]]).cuda()
+    xmin_m = t.tensor([xmin[idx]]).cuda()
+    ymin_m = t.tensor([ymin[idx]]).cuda()
+    xmax_m = t.tensor([xmax[idx]]).cuda()
+    ymax_m = t.tensor([ymax[idx]]).cuda()
 
     for _idx in mean_idx:
         if labels[_idx] == labels[idx]:
@@ -30,16 +31,18 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
     if boxes.shape[0] == 0:
         return t.empty((0, 4)), t.empty((0))
 
+    boxes, labels, scores = boxes.cuda(), labels.cuda(), scores.cuda()
+
     xmin = boxes[:, 0]
     ymin = boxes[:, 1]
     xmax = boxes[:, 2]
     ymax = boxes[:, 3]
 
     areas = (xmax - xmin) * (ymax - ymin)
-    order = t.argsort(scores)
+    order = t.argsort(scores).cuda()
 
-    keep_boxes = t.empty((0, 4))
-    keep_labels = t.empty((0))
+    keep_boxes = t.empty((0, 4)).cuda()
+    keep_labels = t.empty((0)).cuda()
 
     while len(order) > 0:
         idx = order[-1]
@@ -53,13 +56,13 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
         xxmax = t.minimum(xmax[idx], xmax[order])
         yymax = t.minimum(ymax[idx], ymax[order])
 
-        w = np.maximum(0.0, xxmax - xxmin + 1)
-        h = np.maximum(0.0, yymax - yymin + 1)
+        w = t.clamp(xxmax - xxmin + 1, min=0.0)
+        h = t.clamp(yymax - yymin + 1, min=0.0)
         intersection = w*h
         iou = intersection/(areas[idx]+areas[order]-intersection)
 
         if func is not None:
-            to_mean = order[np.where(iou >= threshold)]
+            to_mean = order[t.nonzero(order.where(iou >= threshold, t.zeros(size=order.shape, dtype=bool).cuda()), as_tuple=True)]
             box_keep = func(to_mean,
                             xmin,
                             ymin,
@@ -72,7 +75,7 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
         else:
             keep_boxes = t.cat((keep_boxes, boxes[idx].unsqueeze(0)), dim=0)
         keep_labels = t.cat((keep_labels, labels[idx].unsqueeze(0)))
-        order = order[np.where(iou < threshold)]
+        order = order[t.nonzero(order.where(iou < threshold, t.zeros(size=order.shape, dtype=bool).cuda()), as_tuple=True)]
     return keep_boxes, keep_labels
 
 
@@ -83,4 +86,4 @@ if __name__ == '__main__':
                       [20.0, 5.0, 27.0, 60.0], ])
     scores = t.tensor([0.9, 0.7, 0.5, 0.1])
     labels = t.tensor([1, 1, 1, 1])
-    nms_res, _ = nms(boxes, labels, scores, 0.3)
+    nms_res, _ = nms(boxes, labels, scores, 0.3, func=None)

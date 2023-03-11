@@ -20,7 +20,7 @@ def test_nms_single_box():
     labels = t.tensor([1, 1, 1, 1])
     nms_res, _ = nms(boxes, labels, scores, 0.3, func=None)
     test_boxes = t.tensor([[10.0, 15.0, 25.0, 60.0]])
-    assert t.equal(nms_res, test_boxes)
+    assert t.equal(nms_res.cpu(), test_boxes)
 
 
 def test_nms_multiple_boxes():
@@ -33,7 +33,7 @@ def test_nms_multiple_boxes():
     nms_res, _ = nms(boxes, labels, scores, 0.3, func=None)
     test_boxes = t.tensor([[10.0, 15.0, 25.0, 60.0],
                            [90.0, 80.0, 180.0, 150.0]])
-    assert t.equal(nms_res, test_boxes)
+    assert t.equal(nms_res.cpu(), test_boxes)
 
 
 def test_nms_no_matching_boxes():
@@ -48,7 +48,7 @@ def test_nms_no_matching_boxes():
                            [90.0, 80.0, 180.0, 150.0],
                            [26.0, 65.0, 60.0, 100.0],
                            [10.0, 100.0, 40.0, 150.0], ])
-    assert t.equal(nms_res, test_boxes)
+    assert t.equal(nms_res.cpu(), test_boxes)
 
 
 def test_mean_same_classes():
@@ -60,7 +60,7 @@ def test_mean_same_classes():
     labels = t.tensor([1, 1, 1, 1])
     mean_res, _ = nms(boxes, labels, scores, 0.3)
     test_boxes = t.tensor([[10.77, 15.05, 28.5, 59.55]])
-    assert t.equal(mean_res, test_boxes)
+    assert t.equal(mean_res.cpu(), test_boxes)
 
 
 def test_mean_diff_classes():
@@ -72,4 +72,4 @@ def test_mean_diff_classes():
     labels = t.tensor([1, 5, 1, 1])
     mean_res, _ = nms(boxes, labels, scores, 0.3)
     test_boxes = t.tensor([[10.67, 16.0, 30.13, 61.67]])
-    assert t.equal(mean_res, test_boxes)
+    assert t.equal(mean_res.cpu(), test_boxes)

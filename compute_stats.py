@@ -5,6 +5,7 @@ from data.refer_voc_dataset import ReferVOCDataset
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import torch as t
 
 OUTPUT_DIR = './outputs/res/'
 VOC_DIR = './VOCdevkit/VOC2007/'
@@ -32,8 +33,8 @@ def compute_img_detections(targets_ref, targets_json, stats):
 
     def compare_mean_refer(stats_incr, stat_empty, ref_keyword):
         if check_empty(stat_empty): return
-        overlaps = compute_IoU(np.expand_dims(targets_json['boxes_mean'][i], axis=0), targets_ref['boxes'])
-        assigned_anno_idx = np.argmax(overlaps)
+        overlaps = compute_IoU(t.unsqueeze(t.from_numpy(targets_json['boxes_mean'][i]), 0), t.from_numpy(targets_ref['boxes']))
+        assigned_anno_idx = t.argmax(overlaps).numpy()
         if assigned_anno_idx in used_targs_ref:
             stats[stats_incr[1]] += 1
         else:
@@ -99,3 +100,4 @@ if __name__ == "__main__":
         for j in range(2):
             ax.text(j, i, f'{cm_labels[(i, j)]} = {cm[i, j]}', color='w')
     plt.savefig(os.path.join('./confusion-mat', 'imgs', f'{file_name}.png'))
+    plt.close()

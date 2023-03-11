@@ -1,4 +1,3 @@
-import numpy as np
 import torch as t
 import compare_module.config as c
 from .iou import compute_IoU
@@ -28,8 +27,8 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'err': c.ERR_LACK_BBOX,
             })
             continue
-        overlaps = compute_IoU(np.expand_dims(item, axis=0), bboxes_test)
-        assigned_anno_idx = np.argmax(overlaps)
+        overlaps = compute_IoU(item.unsqueeze(0), bboxes_test)
+        assigned_anno_idx = t.argmax(overlaps)
         max_overlap = overlaps[assigned_anno_idx]
         assigned_label = labels_test[assigned_anno_idx]
         assigned_anno = bboxes_test[assigned_anno_idx]
@@ -71,7 +70,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
         })
         detected_anno.append(assigned_anno_idx)
     if len(detected_anno) < bboxes_test.shape[0]:
-        rest_idx = set([i for i in range(len(bboxes_test))]) - set(detected_anno)
+        rest_idx = [t.tensor(i) for i in range(len(bboxes_test)) if t.tensor(i) not in detected_anno]
         rest_bboxes = [bboxes_test[idx] for idx in rest_idx]
         rest_labels = [labels_test[idx] for idx in rest_idx]
         for bbox, label in zip(rest_bboxes, rest_labels):
