@@ -10,7 +10,7 @@ from verify_funcs.utils import (NUM_SETS, DATA_DIR, MODELS_DIR, OUTPUT_DIR)
 from model import FasterRCNNVGG16
 from utils.vis_tool import vis_image
 from utils import array_tool as at
-from data.dataset import TestDataset
+from data.dataset import VOCBboxDataset
 from torch.utils.data import DataLoader
 
 errs = {
@@ -58,13 +58,13 @@ def compare_labels_single(img, test_bboxes, test_labels, trainers):
 
 def compare_labels_ds(dataloader, trainers):
     global errs
-    for i, (img, _, bboxes, labels, _) in enumerate(dataloader):
-        img, bboxes, labels = img.cuda().squeeze(0), bboxes.cuda().squeeze(0), labels.cuda().squeeze(0)
+    for i, (img, bboxes, labels, _) in enumerate(dataloader):
+        img, bboxes, labels = img.cuda(), bboxes.cuda().squeeze(0), labels.cuda().squeeze(0)
         cmp_res = compare_labels_single(img, bboxes, labels, trainers)
         for res in cmp_res:
             errs[res['err']] += 1
-        if i % 5 == 1:
-            vis_result(img, cmp_res, os.path.join(OUTPUT_DIR, 'vis', f'output_vis_{i}.png'))
+        # if i % 5 == 1:
+            # vis_result(img, cmp_res, os.path.join(OUTPUT_DIR, 'vis', f'output_vis_{i}.png'))
         save_cmp_results(cmp_res, i)
 
 
@@ -75,7 +75,7 @@ def vis_result(img, cmp_res, filename):
 
 if __name__ == "__main__":
     models = read_models()
-    ds = TestDataset(voc_data_dir=DATA_DIR)
+    ds = VOCBboxDataset(data_dir=DATA_DIR, split='test')
     data_loader = DataLoader(dataset=ds,
                              batch_size=1,
                              shuffle=False,
