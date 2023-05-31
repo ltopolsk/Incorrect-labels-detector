@@ -108,9 +108,9 @@ class TestTransform(object):
 
 
 class Dataset:
-    def __init__(self, opt, split='trainval'):
+    def __init__(self, opt):
         self.opt = opt
-        self.db = VOCBboxDataset(opt.voc_data_dir, split=split)
+        self.db = VOCBboxDataset(opt.voc_data_dir, split=opt.split)
         self.tsf = Transform(opt.min_size, opt.max_size)
 
     def __getitem__(self, idx):

@@ -47,6 +47,18 @@ class Config:
     # model
     load_path = None
 
+    split = 'train'
+
+    models_dir = 'models/3'
+    output_dir = 'outputs/3/nms/0_4'
+
+    use_mean = False
+    iou = 0.4
+    test_iou = 0.35
+    num_sets = 3
+
+    vis_verify_res = True
+
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
 
