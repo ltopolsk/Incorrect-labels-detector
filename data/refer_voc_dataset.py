@@ -37,9 +37,12 @@ class ReferVOCDataset():
                 for tag in ('ymin', 'xmin', 'ymax', 'xmax')])
             name = obj.find('name').text.lower().strip()
             label.append(VOC_BBOX_LABEL_NAMES.index(name))
-            renamed.append(int(obj.find('renamed').text))
-            resized.append(int(obj.find('resized').text))
-            removed.append(int(obj.find('removed').text))
+            renamed_single = int(obj.find('renamed').text) if obj.find('renamed') else '0'
+            resized_single = int(obj.find('resized').text) if obj.find('resized') else '0'
+            removed_single = int(obj.find('removed').text) if obj.find('removed') else '0'
+            renamed.append(renamed_single)
+            resized.append(resized_single)
+            removed.append(removed_single)
         try:
             bbox = np.stack(bbox).astype(np.float32)
             label = np.stack(label).astype(np.int32)

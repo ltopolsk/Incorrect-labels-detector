@@ -1,13 +1,15 @@
 from compare_module.iou import compute_IoU
-from compare_module.config import IOU_TRESHOLD, FUNC
+# from compare_module.config import IOU_TRESHOLD, FUNC
+from utils.config import opt
 from data.json_dataset import JsonDataSet
 from data.refer_voc_dataset import ReferVOCDataset
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 import torch as t
+from tqdm import tqdm
 
-OUTPUT_DIR = './outputs/res/'
+OUTPUT_DIR = './outputs/5/mean/0_5/res/'
 VOC_DIR = './VOCdevkit/VOC2007/'
 
 
@@ -35,13 +37,13 @@ def compute_img_detections(targets_ref, targets_json, stats):
         if check_empty(stat_empty): return
         overlaps = compute_IoU(t.unsqueeze(t.from_numpy(targets_json['boxes_mean'][i]), 0), t.from_numpy(targets_ref['boxes']))
         assigned_anno_idx = t.argmax(overlaps).numpy()
-        if assigned_anno_idx in used_targs_ref:
+        if assigned_anno_idx.tolist() in used_targs_ref:
             stats[stats_incr[1]] += 1
         else:
             max_overlap = overlaps[assigned_anno_idx]
-            if max_overlap >= IOU_TRESHOLD and targets_ref[ref_keyword][assigned_anno_idx]:
+            if max_overlap >= opt.test_iou and targets_ref[ref_keyword][assigned_anno_idx]:
                 stats[stats_incr[0]] += 1
-                used_targs_ref.append(assigned_anno_idx)
+                used_targs_ref.append(assigned_anno_idx.tolist())
             else:
                 stats[stats_incr[1]] += 1
 
@@ -71,20 +73,23 @@ def compute_img_detections(targets_ref, targets_json, stats):
         rest_idx = set(i for i in range(targets_ref['boxes'].shape[0])) - set(used_targs_ref)
         stats['fp'] += len(rest_idx)
 
-
-if __name__ == "__main__":
+def compute():
     json_ds = JsonDataSet(OUTPUT_DIR)
     refer_ds = ReferVOCDataset(VOC_DIR, split='test')
     stats = {'tp': 0, 'tn': 0, 'fp': 0, 'fn': 0}
-    for i in range(len(json_ds)):
+    for i in tqdm(range(len(json_ds)), desc='Computing detections'):
         compute_img_detections(refer_ds[i], json_ds[i], stats)
     metrics = {'acc': ((stats["tp"] + stats["tn"])/(stats["tp"]+stats["tn"]+stats["fp"]+stats["fn"])),
                'prec': (stats["tp"]/(stats["tp"]+stats["fp"])),
                'prec_negative': (stats["tn"]/(stats["tn"]+stats["fn"])),
                'recall': (stats["tp"]/(stats["tp"]+stats["fn"])),
-               'recall_negative': (stats["tn"]/(stats["tn"]+stats["fp"])), }
-    file_name = '0_' + str(int(IOU_TRESHOLD*100)) + '_' + FUNC.__name__ if FUNC is not None else 'nms'
-    with open(os.path.join('./confusion-mat', 'metrics', f'{file_name}.txt'), 'w') as f:
+               'recall_negative': (stats["tn"]/(stats["tn"]+stats["fp"])),
+               'fpr':(stats["fp"]/(stats["tn"]+stats["fp"])),
+               'fnr': (stats["fn"]/(stats["tp"]+stats["fn"])),}
+    file_name = '0_' + str(int(opt.test_iou*100)) + '_' + ('mean_box' if opt.use_mean else 'nms')
+    # if not os.path.exists(opt.output_dir):
+        # os.makedirs(opt.output_dir)
+    with open(os.path.join('.\\confusion-mat', '5', 'metrics', f'{file_name}.txt'), 'w') as f:
         for k, v in metrics.items():
             f.write(f'{k}: {v:.3f}\n')
     cm = np.array([[stats['tp'], stats['fp']], [stats['fn'], stats['tn']]])
@@ -99,5 +104,8 @@ if __name__ == "__main__":
     for i in range(2):
         for j in range(2):
             ax.text(j, i, f'{cm_labels[(i, j)]} = {cm[i, j]}', color='w')
-    plt.savefig(os.path.join('./confusion-mat', 'imgs', f'{file_name}.png'))
+    plt.savefig(os.path.join('.\\confusion-mat', '5', 'imgs', f'{file_name}.png'))
     plt.close()
+
+if __name__ == "__main__":
+    compute()
