@@ -1,6 +1,6 @@
 import torch as t
 from compare_module.compare import compare
-import compare_module.config as c
+import compare_module.utils as c
 
 
 def test_cmp_unnes():

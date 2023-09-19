@@ -1,6 +1,4 @@
-import numpy as np
 import torch as t
-# from .iou import compute_IoU
 
 
 def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
@@ -24,12 +22,12 @@ def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
     mean_xmax = t.unsqueeze(xmax_m@weights/weights.sum(), 0)
     mean_ymax = t.unsqueeze(ymax_m@weights/weights.sum(), 0)
 
-    return t.round(t.cat([mean_xmin, mean_ymin, mean_xmax, mean_ymax]), decimals=2).unsqueeze(0)
+    return t.round(t.cat([mean_xmin, mean_ymin, mean_xmax, mean_ymax]), decimals=2).unsqueeze(0), labels[idx].unsqueeze(0), weights.mean().unsqueeze(0)
 
 
 def nms(boxes, labels, scores, threshold, func=mean_bbox):
     if boxes.shape[0] == 0:
-        return t.empty((0, 4)), t.empty((0))
+        return t.empty((0, 4)), t.empty((0)), t.empty((0))
 
     boxes, labels, scores = boxes.cuda(), labels.cuda(), scores.cuda()
 
@@ -43,6 +41,7 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
 
     keep_boxes = t.empty((0, 4)).cuda()
     keep_labels = t.empty((0)).cuda()
+    keep_scores = t.empty((0)).cuda()
 
     while len(order) > 0:
         idx = order[-1]
@@ -63,20 +62,16 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
 
         if func is not None:
             to_mean = order[t.nonzero(order.where(iou >= threshold, t.zeros(size=order.shape, dtype=bool).cuda()), as_tuple=True)]
-            box_keep = func(to_mean,
-                            xmin,
-                            ymin,
-                            xmax,
-                            ymax,
-                            labels,
-                            scores,
-                            idx)
+            box_keep, label_keep, score_keep = func(to_mean, xmin, ymin, xmax, ymax, labels, scores, idx)
             keep_boxes = t.cat((keep_boxes, box_keep))
+            keep_labels = t.cat((keep_labels, label_keep))
+            keep_scores = t.cat((keep_scores, score_keep))
         else:
             keep_boxes = t.cat((keep_boxes, boxes[idx].unsqueeze(0)), dim=0)
-        keep_labels = t.cat((keep_labels, labels[idx].unsqueeze(0)))
+            keep_labels = t.cat((keep_labels, labels[idx].unsqueeze(0)))
+            keep_scores = t.cat((keep_scores, scores[idx].unsqueeze(0)))
         order = order[t.nonzero(order.where(iou < threshold, t.zeros(size=order.shape, dtype=bool).cuda()), as_tuple=True)]
-    return keep_boxes, keep_labels
+    return keep_boxes, keep_labels, keep_scores
 
 
 if __name__ == '__main__':

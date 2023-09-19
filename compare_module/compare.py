@@ -1,9 +1,9 @@
 import torch as t
-import compare_module.config as c
+import compare_module.utils as c
 from .iou import compute_IoU
 
 
-def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
+def compare(bboxes_mean, labels_mean, bboxes_test, labels_test, scores_mean, iou=0.5):
     ret = []
     if bboxes_mean.shape[0] == 0 and bboxes_test.shape[0] > 0:
         for bbox, label in zip(bboxes_test, labels_test):
@@ -13,6 +13,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'box_test': bbox.tolist(),
                 'label_test': label.item(),
                 'err': c.ERR_BBOX_UNNES,
+                'score':0,
             })
         return ret
 
@@ -23,8 +24,9 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': None,
-                'label_test': None,
+                'label_test': -1,
                 'err': c.ERR_LACK_BBOX,
+                'score':scores_mean[i].item(),
             })
             continue
         overlaps = compute_IoU(item.unsqueeze(0), bboxes_test)
@@ -37,17 +39,19 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': None,
-                'label_test': None,
+                'label_test': -1,
                 'err': c.ERR_LACK_BBOX,
+                'score':scores_mean[i].item(),
             })
             continue
-        if max_overlap < c.IOU_TRESHOLD:
+        if max_overlap < iou:
             ret.append({
                 'box_mean': item.tolist(),
                 'label_mean': labels_mean[i].item(),
                 'box_test': assigned_anno.tolist(),
                 'label_test': assigned_label.item(),
                 'err': c.ERR_BBOX_SIZE,
+                'score':scores_mean[i].item(),
             })
             detected_anno.append(assigned_anno_idx)
             continue
@@ -58,6 +62,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'box_test': assigned_anno.tolist(),
                 'label_test': assigned_label.item(),
                 'err': c.ERR_LABEL,
+                'score':scores_mean[i].item(),
             })
             detected_anno.append(assigned_anno_idx)
             continue
@@ -67,6 +72,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'box_test': assigned_anno.tolist(),
                 'label_test': assigned_label.item(),
                 'err': c.TRUE_POS,
+                'score':scores_mean[i].item(),
         })
         detected_anno.append(assigned_anno_idx)
     if len(detected_anno) < bboxes_test.shape[0]:
@@ -80,6 +86,7 @@ def compare(bboxes_mean, labels_mean, bboxes_test, labels_test):
                 'box_test': bbox.tolist(),
                 'label_test': label.item(),
                 'err': c.ERR_BBOX_UNNES,
+                'score':0,
             })
 
-    return ret
+    return sorted(ret, key=lambda x: x["label_test"], reverse=True)

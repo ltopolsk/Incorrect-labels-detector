@@ -37,9 +37,14 @@ class ReferVOCDataset():
                 for tag in ('ymin', 'xmin', 'ymax', 'xmax')])
             name = obj.find('name').text.lower().strip()
             label.append(VOC_BBOX_LABEL_NAMES.index(name))
-            renamed_single = int(obj.find('renamed').text) if obj.find('renamed') else '0'
-            resized_single = int(obj.find('resized').text) if obj.find('resized') else '0'
-            removed_single = int(obj.find('removed').text) if obj.find('removed') else '0'
+            renamed_single =obj.find('renamed').text if obj.find('renamed') is not None else 0
+            resized_single =obj.find('resized').text if obj.find('resized') is not None else 0
+            removed_single =obj.find('removed').text if obj.find('removed') is not None else 0
+
+
+            renamed_single = int(renamed_single)
+            resized_single = int(resized_single)
+            removed_single = int(removed_single)
             renamed.append(renamed_single)
             resized.append(resized_single)
             removed.append(removed_single)
@@ -52,12 +57,13 @@ class ReferVOCDataset():
         renamed = np.array(renamed, dtype=np.bool_).astype(np.uint8)
         resized = np.array(resized, dtype=np.bool_).astype(np.uint8)
         removed = np.array(removed, dtype=np.bool_).astype(np.uint8)
-        return {'boxes': bbox,
-                'labels': label,
-                'difficult': difficult,
-                'renamed': renamed,
-                'resized': resized,
-                'removed': removed, }
+        sort_indicies = np.flip(np.argsort(label))
+        return {'boxes': bbox[sort_indicies],
+                'labels': label[sort_indicies],
+                'difficult': difficult[sort_indicies],
+                'renamed': renamed[sort_indicies],
+                'resized': resized[sort_indicies],
+                'removed': removed[sort_indicies], }
 
     def __len__(self):
         return len(self.ids)

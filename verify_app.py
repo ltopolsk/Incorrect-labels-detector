@@ -2,7 +2,7 @@ import os
 import json
 import torch as t
 from compare_module.compare import compare
-import compare_module.config as c
+import compare_module.utils as c
 from compare_module.nms import nms, mean_bbox
 from verify_funcs.visualize_funcs import cust_vis_bbox
 from utils.config import opt
@@ -20,9 +20,16 @@ errs = {
     c.ERR_BBOX_UNNES: 0,
     c.ERR_LABEL: 0,
     c.ERR_LACK_BBOX: 0,
-    c.ERR_REDUN: 0,
+    # c.ERR_REDUN: 0,
 }
 
+names = {
+    c.TRUE_POS: "TP", 
+    c.ERR_LABEL: "ERR_CLASS",
+    c.ERR_BBOX_SIZE: "ERR_BBOX_SIZE",
+    c.ERR_LACK_BBOX: "ERR_MISSING",
+    c.ERR_BBOX_UNNES: "ERR_UNNESS"
+}
 
 def read_models():
     models = []
@@ -49,12 +56,12 @@ def compare_labels_single(img, test_bboxes, test_labels, trainers):
         labels.extend(_labels[0])
         scores.extend(_scores[0])
     f = mean_bbox if opt.use_mean else None
-    avg_bboxes, avg_labels = nms(boxes=t.tensor(np.array(boxes)),
-                                 labels=t.tensor(np.array(labels)),
-                                 scores=t.tensor(np.array(scores)),
-                                 threshold=opt.iou,
-                                 func=f)
-    return compare(avg_bboxes, avg_labels, test_bboxes, test_labels)
+    avg_bboxes, avg_labels, avg_scores = nms(boxes=t.tensor(np.array(boxes)),
+                                             labels=t.tensor(np.array(labels)),
+                                             scores=t.tensor(np.array(scores)),
+                                             threshold=0.7,
+                                             func=f)
+    return compare(avg_bboxes, avg_labels, test_bboxes, test_labels, avg_scores, opt.iou)
 
 
 def compare_labels_ds(dataloader, trainers):
@@ -66,13 +73,19 @@ def compare_labels_ds(dataloader, trainers):
         for res in cmp_res:
             errs[res['err']] += 1
         if i % 10 == 0 and opt.vis_verify_res:
-            vis_result(img, cmp_res, os.path.join(opt.output_dir, 'vis', f'output_vis_{i}.png'))
+            vis_result(img, cmp_res, f'output_vis_{i}.png')
         save_cmp_results(cmp_res, i)
 
 
 def vis_result(img, cmp_res, filename):
-    ax = vis_image(at.tonumpy(img[0]))
-    cust_vis_bbox(ax, cmp_res, filename)
+    groups = {err_key: [] for err_key in errs.keys()}
+    for res in cmp_res:
+        groups[res["err"]].append(res)
+    
+    for item, val in groups.items():
+        if len(val)>0: 
+            ax = vis_image(at.tonumpy(img[0]))
+            cust_vis_bbox(ax, val, os.path.join(opt.output_dir, 'vis', names[item],filename))
 
 
 def verify(**kwargs):
@@ -86,8 +99,12 @@ def verify(**kwargs):
     data_loader = DataLoader(dataset=ds,
                              batch_size=1,
                              shuffle=False,
-                             num_workers=4,
+                             num_workers=8,
                              pin_memory=True)
+    if opt.vis_verify_res:
+        for err_type in ("TP", "ERR_CLASS","ERR_BBOX_SIZE", "ERR_MISSING", "ERR_UNNESS"):
+            if not os.path.exists(os.path.join(opt.output_dir, 'vis', err_type)):
+                os.makedirs(os.path.join(opt.output_dir, 'vis', err_type))
     compare_labels_ds(data_loader, models)
     with open(os.path.join(opt.output_dir, 'res', 'output_errs.json'), 'w') as f:
         json.dump(errs, f)

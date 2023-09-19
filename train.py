@@ -49,7 +49,7 @@ def train(**kwargs):
                                   batch_size=1,
                                   shuffle=True,
                                   num_workers=2)
-    testset = TestDataset(opt.voc_data_dir)
+    testset = TestDataset(opt.voc_data_dir, split=opt.val_split)
     test_dataloader = data_.DataLoader(testset,
                                        batch_size=1,
                                        num_workers=2,
