@@ -8,6 +8,7 @@ from pprint import pprint
 class Config:
     # data
     voc_data_dir = './VOCdevkit/VOC2007/'
+
     min_size = 600  # image resize
     max_size = 1000 # image resize
     num_workers = 8
@@ -43,9 +44,22 @@ class Config:
     # debug
     debug_file = '/tmp/debugf'
 
-    test_num = 10000
+    test_num = 1000
     # model
     load_path = None
+
+    split = 'train'
+    val_split = 'val'
+
+    models_dir = 'models/4'
+    output_dir = 'outputs/4/nms/0_5'
+
+    use_mean = False
+    iou = 0.5
+    test_iou = 0.5
+    num_sets = 5
+
+    vis_verify_res = False
 
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
     caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'

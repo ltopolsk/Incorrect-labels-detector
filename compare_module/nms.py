@@ -1,33 +1,35 @@
-import numpy as np
+import torch as t
 
 
 def mean_bbox(mean_idx, xmin, ymin, xmax, ymax, labels, scores, idx):
 
-    weights = np.array([scores[idx]])
-    xmin_m = np.array([xmin[idx]])
-    ymin_m = np.array([ymin[idx]])
-    xmax_m = np.array([xmax[idx]])
-    ymax_m = np.array([ymax[idx]])
+    weights = t.tensor([scores[idx]]).cuda()
+    xmin_m = t.tensor([xmin[idx]]).cuda()
+    ymin_m = t.tensor([ymin[idx]]).cuda()
+    xmax_m = t.tensor([xmax[idx]]).cuda()
+    ymax_m = t.tensor([ymax[idx]]).cuda()
 
     for _idx in mean_idx:
         if labels[_idx] == labels[idx]:
-            weights = np.append(weights, scores[_idx])
-            xmin_m = np.append(xmin_m, xmin[_idx])
-            ymin_m = np.append(ymin_m, ymin[_idx])
-            xmax_m = np.append(xmax_m, xmax[_idx])
-            ymax_m = np.append(ymax_m, ymax[_idx])
+            weights = t.cat((weights, scores[_idx].unsqueeze(0)))
+            xmin_m = t.cat((xmin_m, xmin[_idx].unsqueeze(0)))
+            ymin_m = t.cat((ymin_m, ymin[_idx].unsqueeze(0)))
+            xmax_m = t.cat((xmax_m, xmax[_idx].unsqueeze(0)))
+            ymax_m = t.cat((ymax_m, ymax[_idx].unsqueeze(0)))
 
-    mean_xmin = round(np.average(xmin_m, weights=weights), 2)
-    mean_ymin = round(np.average(ymin_m, weights=weights), 2)
-    mean_xmax = round(np.average(xmax_m, weights=weights), 2)
-    mean_ymax = round(np.average(ymax_m, weights=weights), 2)
+    mean_xmin = t.unsqueeze(xmin_m@weights/weights.sum(), 0)
+    mean_ymin = t.unsqueeze(ymin_m@weights/weights.sum(), 0)
+    mean_xmax = t.unsqueeze(xmax_m@weights/weights.sum(), 0)
+    mean_ymax = t.unsqueeze(ymax_m@weights/weights.sum(), 0)
 
-    return np.array([mean_xmin, mean_ymin, mean_xmax, mean_ymax])
+    return t.round(t.cat([mean_xmin, mean_ymin, mean_xmax, mean_ymax]), decimals=2).unsqueeze(0), labels[idx].unsqueeze(0), weights.mean().unsqueeze(0)
 
 
 def nms(boxes, labels, scores, threshold, func=mean_bbox):
-    if len(boxes) == 0:
-        return np.array([]), np.array([])
+    if boxes.shape[0] == 0:
+        return t.empty((0, 4)), t.empty((0)), t.empty((0))
+
+    boxes, labels, scores = boxes.cuda(), labels.cuda(), scores.cuda()
 
     xmin = boxes[:, 0]
     ymin = boxes[:, 1]
@@ -35,10 +37,11 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
     ymax = boxes[:, 3]
 
     areas = (xmax - xmin) * (ymax - ymin)
-    order = np.argsort(scores)
+    order = t.argsort(scores).cuda()
 
-    keep_boxes = []
-    keep_labels = []
+    keep_boxes = t.empty((0, 4)).cuda()
+    keep_labels = t.empty((0)).cuda()
+    keep_scores = t.empty((0)).cuda()
 
     while len(order) > 0:
         idx = order[-1]
@@ -47,29 +50,35 @@ def nms(boxes, labels, scores, threshold, func=mean_bbox):
 
         order = order[:-1]
 
-        xxmin = np.maximum(xmin[idx], xmin[order])
-        yymin = np.maximum(ymin[idx], ymin[order])
-        xxmax = np.minimum(xmax[idx], xmax[order])
-        yymax = np.minimum(ymax[idx], ymax[order])
+        xxmin = t.maximum(xmin[idx], xmin[order])
+        yymin = t.maximum(ymin[idx], ymin[order])
+        xxmax = t.minimum(xmax[idx], xmax[order])
+        yymax = t.minimum(ymax[idx], ymax[order])
 
-        w = np.maximum(0.0, xxmax - xxmin + 1)
-        h = np.maximum(0.0, yymax - yymin + 1)
+        w = t.clamp(xxmax - xxmin + 1, min=0.0)
+        h = t.clamp(yymax - yymin + 1, min=0.0)
         intersection = w*h
         iou = intersection/(areas[idx]+areas[order]-intersection)
 
         if func is not None:
-            to_mean = order[np.where(iou >= threshold)]
-            box_keep = func(to_mean,
-                            xmin,
-                            ymin,
-                            xmax,
-                            ymax,
-                            labels,
-                            scores,
-                            idx)
-            keep_boxes.append(box_keep)
+            to_mean = order[t.nonzero(order.where(iou >= threshold, t.zeros(size=order.shape, dtype=bool).cuda()), as_tuple=True)]
+            box_keep, label_keep, score_keep = func(to_mean, xmin, ymin, xmax, ymax, labels, scores, idx)
+            keep_boxes = t.cat((keep_boxes, box_keep))
+            keep_labels = t.cat((keep_labels, label_keep))
+            keep_scores = t.cat((keep_scores, score_keep))
         else:
-            keep_boxes.append(boxes[idx])
-        keep_labels.append(labels[idx])
-        order = order[np.where(iou < threshold)]
-    return np.array(keep_boxes), np.array(keep_labels)
+            keep_boxes = t.cat((keep_boxes, boxes[idx].unsqueeze(0)), dim=0)
+            keep_labels = t.cat((keep_labels, labels[idx].unsqueeze(0)))
+            keep_scores = t.cat((keep_scores, scores[idx].unsqueeze(0)))
+        order = order[t.nonzero(order.where(iou < threshold, t.zeros(size=order.shape, dtype=bool).cuda()), as_tuple=True)]
+    return keep_boxes, keep_labels, keep_scores
+
+
+if __name__ == '__main__':
+    boxes = t.tensor([[10.0, 15.0, 25.0, 60.0],
+                      [11.0, 13.0, 25.0, 55.0],
+                      [10.0, 20.0, 40.0, 65.0],
+                      [20.0, 5.0, 27.0, 60.0], ])
+    scores = t.tensor([0.9, 0.7, 0.5, 0.1])
+    labels = t.tensor([1, 1, 1, 1])
+    nms_res, _ = nms(boxes, labels, scores, 0.3, func=None)

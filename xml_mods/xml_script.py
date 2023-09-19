@@ -81,13 +81,13 @@ def modify_objects(filepath, prob, total_modified, total_num_obj, func, cat=None
     root = tree.getroot()
     modified = 0
     for obj in root.iter('object'):
-        # if (func == 'rem' and root_num_objs(root) == 1):
-            # continue
-        # if obj.find('difficult').text == '0' and (cat is None or obj.find('name').text == cat) and randint(0, 100) < prob*100:
-        globals()[func](root, obj)
-        modified += 1
-            # if abs(prob - (total_modified + modified)/total_num_obj) <= DELTA:
-                # break
+        if (func == 'rem' and root_num_objs(root) == 1):
+            continue
+        if obj.find('difficult').text == '0' and (cat is None or obj.find('name').text == cat) and randint(0, 100) < prob*100:
+            globals()[func](root, obj)
+            modified += 1
+            if abs(prob - (total_modified + modified)/total_num_obj) <= DELTA:
+                break
     tree.write(filepath)
     return modified
 
@@ -116,7 +116,7 @@ def get_names():
     images = get_img_ids(SPLIT)
     names = set([])
     for img in images:
-        objects, _ = get_objects(os.path.join(VOC_DIR, f"ReferAnno/{img}.xml"))
+        objects, _ = get_objects(os.path.join(VOC_DIR, f"Annotations/{img}.xml"))
         for obj in objects:
             names.add(obj.find('name').text)
     return list(names)
@@ -131,7 +131,7 @@ def get_img_ids(filename):
 def count_total_obj(img_ids, cat=None):
     total_num_obj = 0
     for img in img_ids:
-        total_num_obj += num_objects(os.path.join(VOC_DIR, f"ReferAnno/{img}.xml"), cat)
+        total_num_obj += num_objects(os.path.join(VOC_DIR, f"Annotations/{img}.xml"), cat)
     return total_num_obj
 
 
@@ -142,14 +142,14 @@ def do_operation(num, func, filename, cat=None):
     cat_print = cat if cat is not None else "_"
     print(f"loop {0}. ({(cat_print)})")
     for img in images:
-        total_modified += modify_objects(os.path.join(VOC_DIR, f"ReferAnno/{img}.xml"), num, total_modified, total_num_obj, func, cat)
+        total_modified += modify_objects(os.path.join(VOC_DIR, f"Annotations/{img}.xml"), num, total_modified, total_num_obj, func, cat)
     if func == "rem":
         i = 1
         while num - total_modified/total_num_obj > DELTA and i < 10:
             print(f"loop {i}. ({cat})")
             i += 1
             for img in images:
-                total_modified += modify_objects(os.path.join(VOC_DIR, f"/{img}.xml"), num, total_modified, total_num_obj, func, cat)
+                total_modified += modify_objects(os.path.join(VOC_DIR, f"Annotations/{img}.xml"), num, total_modified, total_num_obj, func, cat)
             if abs(num - total_modified/total_num_obj) <= DELTA:
                 break
     return total_modified, total_num_obj
@@ -160,7 +160,7 @@ def do_rem():
     total_removed = 0
     for i, cat in enumerate(NAMES):
         print(f"class {i}/{len(NAMES)}")
-        removed, num_obj = do_operation(PER, FUNC, f"{cat.lower()}_{SPLIT}.txt", cat)
+        removed, num_obj = do_operation(PER, FUNC, f"{cat.lower()}_{SPLIT}".replace("_remove", ""), cat)
         print(f"CLASS {cat}\nremoved: {removed}, total: {num_obj}\n{removed/num_obj:.04f}")
         total_removed += removed
     print(f"Total objs removed: {total_removed}\n{total_removed/total_num_obj:.04f}")
@@ -177,8 +177,7 @@ def parse_args():
     parser.add_argument('-p', '--percent')
     parser.add_argument('-d', '--dir')
     parser.add_argument('-s', '--split')
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 def config_script(args):
@@ -192,7 +191,7 @@ def config_script(args):
     VOC_DIR = args.dir
     SPLIT = args.split
     DELTA = 0.005
-    PER = float(args.percent)
+    PER = float(args.percent) if args.percent else 1.0
     FUNC = args.function.lower()
     NAMES = get_names()
 
@@ -200,7 +199,9 @@ def config_script(args):
 if __name__ == "__main__":    
     args = parse_args()
     config_script(args)
+    print(PER)
     # if FUNC == "rem":
         # do_rem()
     # else:
     do_default()
+    print('DONE')

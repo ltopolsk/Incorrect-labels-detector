@@ -97,10 +97,20 @@ class Transform(object):
         return img, bbox, label, scale
 
 
+class TestTransform(object):
+
+    def __init__(self, min_size=600, max_size=1000):
+        self.min_size = min_size
+        self.max_size = max_size
+
+    def __call__(self, in_img):
+        return preprocess(in_img, self.min_size, self.max_size)
+
+
 class Dataset:
-    def __init__(self, opt, split='trainval'):
+    def __init__(self, opt):
         self.opt = opt
-        self.db = VOCBboxDataset(opt.voc_data_dir, split=split)
+        self.db = VOCBboxDataset(opt.voc_data_dir, split=opt.split)
         self.tsf = Transform(opt.min_size, opt.max_size)
 
     def __getitem__(self, idx):
@@ -116,19 +126,16 @@ class Dataset:
 
 
 class TestDataset:
-    def __init__(self, opt, split='test', use_difficult=True):
-        self.opt = opt
-        self.db = VOCBboxDataset(opt.voc_data_dir, split=split, use_difficult=use_difficult)
+    def __init__(self, voc_data_dir, split='test', use_difficult=False):
+        # self.opt = opt
+        self.db = VOCBboxDataset(voc_data_dir, split=split, use_difficult=use_difficult)
+        self.tsf = TestTransform()
 
     def __getitem__(self, idx):
         ori_img, bbox, label, difficult = self.db.get_example(idx)
-        img = preprocess(ori_img)
+        img = self.tsf(ori_img)
         return img, ori_img.shape[1:], bbox, label, difficult
 
     def __len__(self):
         return len(self.db)
 
-
-if __name__ == "__main__":
-    ds = Dataset(opt)
-    print(ds[100])

@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import compare_module.config as c
+import compare_module.utils as c
 VOC_BBOX_LABEL_NAMES = (
     'fly',
     'bike',
@@ -30,11 +30,10 @@ COLORS = {
     c.ERR_BBOX_SIZE: 'orange',
     c.ERR_BBOX_UNNES: 'purple',
     c.ERR_LACK_BBOX: 'yellow',
-    c.ERR_REDUN: 'blue',
 }
 
 
-def draw_bbox(ax, bbox, label, color):
+def draw_bbox(ax, bbox, label, color, is_mean):
     if bbox is None:
         return ax
     bbox = bbox[0] if type(bbox[0]) == list else bbox
@@ -45,7 +44,7 @@ def draw_bbox(ax, bbox, label, color):
             xy, width, height, fill=False, edgecolor=color, linewidth=2))
     if label is not None:
         ax.text(bbox[1], bbox[0],
-                VOC_BBOX_LABEL_NAMES[label],
+                f'{"MEAN" if is_mean else "TEST"}: {VOC_BBOX_LABEL_NAMES[int(label)]}',
                 style='italic',
                 bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 0})
     return ax
@@ -55,8 +54,7 @@ def cust_vis_bbox(ax, cmp_res, figname):
     if len(cmp_res) == 0:
         return ax
     for res in cmp_res:
-        if res['box_test'] is None:
-            ax = draw_bbox(ax, res['box_mean'], res['label_mean'], COLORS[res['err']])
-        ax = draw_bbox(ax, res['box_test'], res['label_test'], COLORS[res['err']])
+        ax = draw_bbox(ax, res['box_mean'], res['label_mean'], 'yellow', True)
+        ax = draw_bbox(ax, res['box_test'], res['label_test'], 'green', False)
     plt.savefig(figname)
     plt.close()

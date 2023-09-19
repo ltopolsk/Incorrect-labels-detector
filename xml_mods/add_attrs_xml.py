@@ -1,7 +1,6 @@
 import os
-
-from torch import true_divide
-from xml_mods.xml_script import get_objects
+from xml_script import get_objects, add_attrs
+from tqdm import tqdm
 
 
 VOC_DIR = './VOCdevkit/VOC2007'
@@ -54,8 +53,10 @@ if __name__ == "__main__":
              'remove': set_removed, }
     for key in items.keys():
         imgs_ids = get_img_ids(os.path.join(VOC_DIR, 'ImageSets', 'Main', f'test_{key}.txt'))
-        for id in imgs_ids:
+        for id in tqdm(imgs_ids, f'Adding atributes to {key}'):
             ref_objs, ref_tree = get_objects(os.path.join(VOC_DIR, "ReferAnno", f"{id}.xml"))
             mod_objs, _ = get_objects(os.path.join(VOC_DIR, 'Annotations', f'{id}.xml'))
+            for obj in ref_objs:
+                add_attrs(None, obj)
             items[key](ref_objs, mod_objs)
             ref_tree.write(os.path.join(VOC_DIR, "ReferAnno", f"{id}.xml"))
