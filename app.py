@@ -1,5 +1,3 @@
-import os
-import argparse
 from utils.config import opt
 from train import train
 from xml_mods.split_train_set import split_set
